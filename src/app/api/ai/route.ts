@@ -23,7 +23,73 @@ Guidelines:
 9. Encourage good character, patience, and sincerity in seeking knowledge.
 10. Respond in the same language the user asks in (English, Arabic, etc.).
 
-Remember: you are an assistant for learning and reflection, not a substitute for qualified scholarly guidance on personal religious rulings.`;
+Remember: you are an assistant for learning and reflection, not a substitute for qualified scholarly guidance on personal religious rulings.
+
+OUTPUT FORMAT (important — follow exactly):
+After your main answer, append exactly two sections on their own lines, formatted precisely as:
+
+[[CITATIONS]]
+List every source you referenced, one per line, in the format "Type | Reference". Type is one of: Quran, Hadith, Scholar, Book, Other.
+Examples:
+Quran | Surah Al-Baqarah 2:255
+Hadith | Sahih al-Bukhari #1
+Scholar | Imam an-Nawawi, Forty Hadith
+Book | Riyadh as-Salihin
+
+[[FOLLOWUPS]]
+Suggest 3 concise follow-up questions the user might ask next, one per line, each as a complete question ending with a question mark. Make them genuinely useful and related to the answer.
+
+If you did not reference any specific sources, output [[CITATIONS]] followed by nothing. Always include the [[FOLLOWUPS]] section.`;
+
+// Parse the [[CITATIONS]] and [[FOLLOWUPS]] sections from the response.
+interface Citation {
+  type: string;
+  reference: string;
+}
+function parseResponse(raw: string): {
+  answer: string;
+  citations: Citation[];
+  followups: string[];
+} {
+  let answer = raw;
+  const citations: Citation[] = [];
+  const followups: string[] = [];
+
+  const citeMatch = raw.match(/\[\[CITATIONS\]\]\s*([\s\S]*?)(?:\[\[FOLLOWUPS\]\]|$)/i);
+  if (citeMatch) {
+    const block = citeMatch[1].trim();
+    for (const line of block.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const pipeIdx = trimmed.indexOf("|");
+      if (pipeIdx > -1) {
+        citations.push({
+          type: trimmed.slice(0, pipeIdx).trim(),
+          reference: trimmed.slice(pipeIdx + 1).trim(),
+        });
+      } else {
+        citations.push({ type: "Other", reference: trimmed });
+      }
+    }
+  }
+
+  const followMatch = raw.match(/\[\[FOLLOWUPS\]\]\s*([\s\S]*)$/i);
+  if (followMatch) {
+    const block = followMatch[1].trim();
+    for (const line of block.split("\n")) {
+      const trimmed = line.trim().replace(/^[-*\d.\s]+/, "");
+      if (trimmed) followups.push(trimmed);
+    }
+  }
+
+  // Strip the sections from the answer.
+  answer = raw
+    .replace(/\[\[CITATIONS\]\][\s\S]*?(?=\[\[FOLLOWUPS\]\]|$)/i, "")
+    .replace(/\[\[FOLLOWUPS\]\][\s\S]*$/i, "")
+    .trim();
+
+  return { answer, citations: citations.slice(0, 12), followups: followups.slice(0, 3) };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,13 +125,17 @@ export async function POST(req: NextRequest) {
       thinking: { type: "disabled" },
     });
 
-    const response =
+    const raw =
       completion.choices?.[0]?.message?.content ||
       "I apologize, but I was unable to generate a response. Please try rephrasing your question.";
 
+    const { answer, citations, followups } = parseResponse(raw);
+
     return NextResponse.json({
       success: true,
-      response,
+      response: answer,
+      citations,
+      followups,
       usage: completion.usage,
     });
   } catch (error) {

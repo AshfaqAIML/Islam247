@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ViewId, ReadingProgress } from "./types";
 
+interface ReadingStat {
+  date: string; // YYYY-MM-DD
+  chaptersRead: number;
+  ayahsRead: number;
+  minutesRead: number;
+}
+
 interface AppState {
   // Navigation
   view: ViewId;
@@ -20,6 +27,13 @@ interface AppState {
   // Reading progress (persisted)
   readingProgress: Record<string, ReadingProgress>;
   updateReadingProgress: (p: ReadingProgress) => void;
+
+  // Reading stats & streak (persisted)
+  readingStats: Record<string, ReadingStat>; // keyed by date
+  lastReadDate: string | null;
+  recordReading: (opts: { chapters?: number; ayahs?: number; minutes?: number }) => void;
+  getStreak: () => number;
+  getTotalStats: () => { days: number; chapters: number; ayahs: number; minutes: number };
 
   // Tasbeeh (persisted)
   tasbeehCount: number;
@@ -46,9 +60,31 @@ interface AppState {
   setReaderFontSize: (n: number) => void;
   setReaderTheme: (t: "light" | "sepia" | "dark") => void;
 
+  // Quran audio player (session state — not persisted)
+  audioSurahId: number | null;
+  audioReciter: string;
+  audioIsPlaying: boolean;
+  audioCurrentTime: number;
+  audioDuration: number;
+  setAudioSurah: (id: number | null) => void;
+  setAudioReciter: (r: string) => void;
+  setAudioPlaying: (p: boolean) => void;
+  setAudioTime: (current: number, duration?: number) => void;
+
   // Search
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function daysBetween(a: string, b: string) {
+  const da = new Date(a + "T00:00:00");
+  const db = new Date(b + "T00:00:00");
+  return Math.round((db.getTime() - da.getTime()) / 86400000);
 }
 
 export const useAppStore = create<AppState>()(
@@ -71,6 +107,68 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           readingProgress: { ...s.readingProgress, [p.bookId]: p },
         })),
+
+      readingStats: {},
+      lastReadDate: null,
+      recordReading: ({ chapters = 0, ayahs = 0, minutes = 0 }) => {
+        const today = todayStr();
+        set((s) => {
+          const existing = s.readingStats[today] || {
+            date: today,
+            chaptersRead: 0,
+            ayahsRead: 0,
+            minutesRead: 0,
+          };
+          return {
+            readingStats: {
+              ...s.readingStats,
+              [today]: {
+                date: today,
+                chaptersRead: existing.chaptersRead + chapters,
+                ayahsRead: existing.ayahsRead + ayahs,
+                minutesRead: existing.minutesRead + minutes,
+              },
+            },
+            lastReadDate: today,
+          };
+        });
+      },
+      getStreak: () => {
+        const { readingStats } = get();
+        if (Object.keys(readingStats).length === 0) return 0;
+        let streak = 0;
+        let cursor = new Date();
+        for (;;) {
+          const ds = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+          if (readingStats[ds]) {
+            streak++;
+            cursor.setDate(cursor.getDate() - 1);
+          } else {
+            // Allow today to be empty without breaking the streak (if yesterday was read)
+            if (streak === 0) {
+              cursor.setDate(cursor.getDate() - 1);
+              const ds2 = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+              if (readingStats[ds2]) {
+                streak++;
+                cursor.setDate(cursor.getDate() - 1);
+                continue;
+              }
+            }
+            break;
+          }
+        }
+        return streak;
+      },
+      getTotalStats: () => {
+        const { readingStats } = get();
+        const all = Object.values(readingStats);
+        return {
+          days: all.length,
+          chapters: all.reduce((a, b) => a + b.chaptersRead, 0),
+          ayahs: all.reduce((a, b) => a + b.ayahsRead, 0),
+          minutes: all.reduce((a, b) => a + b.minutesRead, 0),
+        };
+      },
 
       tasbeehCount: 0,
       tasbeehTotal: 0,
@@ -108,6 +206,21 @@ export const useAppStore = create<AppState>()(
       setReaderFontSize: (n) => set({ readerFontSize: n }),
       setReaderTheme: (t) => set({ readerTheme: t }),
 
+      audioSurahId: null,
+      audioReciter: "ar.alafasy",
+      audioIsPlaying: false,
+      audioCurrentTime: 0,
+      audioDuration: 0,
+      setAudioSurah: (id) =>
+        set({ audioSurahId: id, audioIsPlaying: id !== null, audioCurrentTime: 0 }),
+      setAudioReciter: (r) => set({ audioReciter: r }),
+      setAudioPlaying: (p) => set({ audioIsPlaying: p }),
+      setAudioTime: (current, duration) =>
+        set((s) => ({
+          audioCurrentTime: current,
+          audioDuration: duration ?? s.audioDuration,
+        })),
+
       searchQuery: "",
       setSearchQuery: (q) => set({ searchQuery: q }),
     }),
@@ -115,6 +228,8 @@ export const useAppStore = create<AppState>()(
       name: "islam24x7-store",
       partialize: (s) => ({
         readingProgress: s.readingProgress,
+        readingStats: s.readingStats,
+        lastReadDate: s.lastReadDate,
         tasbeehTotal: s.tasbeehTotal,
         tasbeehTarget: s.tasbeehTarget,
         currentDhikr: s.currentDhikr,
@@ -126,3 +241,6 @@ export const useAppStore = create<AppState>()(
     }
   )
 );
+
+void daysBetween; // reserved for future streak edge cases
+

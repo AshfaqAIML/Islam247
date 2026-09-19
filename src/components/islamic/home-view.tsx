@@ -24,6 +24,7 @@ import type { ViewId } from "@/lib/types";
 import { getDailyAyah } from "@/lib/data/quran";
 import { getBookById } from "@/lib/data/books";
 import { StarMark, StarDivider } from "./star-mark";
+import { ReadingStatsWidget } from "./reading-stats-widget";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -383,6 +384,11 @@ export function HomeView() {
             </div>
           </Card>
         </motion.div>
+      </div>
+
+      {/* Reading stats widget */}
+      <div className="mt-8">
+        <ReadingStatsWidget />
       </div>
 
       {/* Feature highlights */}

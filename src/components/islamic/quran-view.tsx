@@ -10,6 +10,9 @@ import {
   MapPin,
   Search,
   Sparkles,
+  Play,
+  Pause,
+  Volume2,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { quranData } from "@/lib/data/quran";
@@ -168,26 +171,36 @@ function SurahList() {
 
 function SurahCard({ surah, onOpen }: { surah: Surah; onOpen: () => void }) {
   const isMeccan = surah.revelationType === "Meccan";
+  const setAudioSurah = useAppStore((s) => s.setAudioSurah);
+  const audioSurahId = useAppStore((s) => s.audioSurahId);
+  const isCurrentAudio = audioSurahId === surah.id;
   return (
-    <motion.button
-      type="button"
-      onClick={onOpen}
+    <motion.div
       variants={{
         hidden: { opacity: 0, y: 16 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
       }}
-      className="group relative flex w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left transition-all hover:-translate-y-1 hover:border-emerald/30 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald/40"
+      className="group relative flex w-full items-stretch gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 text-left transition-all hover:-translate-y-1 hover:border-emerald/30 hover:shadow-lg"
     >
       {/* Number badge — rounded square with gradient emerald bg + star watermark */}
-      <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-emerald to-emerald/70 shadow-md">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-emerald to-emerald/70 shadow-md transition-transform group-hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald/40"
+        aria-label={`Open Surah ${surah.name}`}
+      >
         <StarMark className="absolute h-12 w-12 opacity-25" />
         <span className="relative z-10 text-lg font-bold text-primary-foreground">
           {surah.id}
         </span>
-      </div>
+      </button>
 
       {/* Body */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 flex-col justify-center text-left focus-visible:outline-none"
+      >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h3 className="truncate font-semibold text-foreground">
@@ -219,8 +232,30 @@ function SurahCard({ surah, onOpen }: { surah: Surah; onOpen: () => void }) {
             {surah.ayahCount} ayahs
           </span>
         </div>
-      </div>
-    </motion.button>
+      </button>
+
+      {/* Play button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setAudioSurah(isCurrentAudio ? null : surah.id);
+        }}
+        className={cn(
+          "absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full transition-all",
+          isCurrentAudio
+            ? "bg-gold text-primary-foreground shadow-md"
+            : "bg-emerald-soft text-emerald opacity-0 group-hover:opacity-100"
+        )}
+        aria-label={isCurrentAudio ? "Stop audio" : "Play surah audio"}
+      >
+        {isCurrentAudio ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="ml-0.5 h-4 w-4" />
+        )}
+      </button>
+    </motion.div>
   );
 }
 
@@ -229,6 +264,15 @@ function SurahCard({ surah, onOpen }: { surah: Surah; onOpen: () => void }) {
 function SurahReading({ surah }: { surah: Surah }) {
   const toggleFavorite = useAppStore((s) => s.toggleFavorite);
   const favorites = useAppStore((s) => s.favorites);
+  const setAudioSurah = useAppStore((s) => s.setAudioSurah);
+  const audioSurahId = useAppStore((s) => s.audioSurahId);
+  const recordReading = useAppStore((s) => s.recordReading);
+  const isCurrentAudio = audioSurahId === surah.id;
+
+  // Record ayahs read on mount (one-time per surah open).
+  useEffect(() => {
+    recordReading({ ayahs: surah.ayahCount, minutes: Math.max(1, Math.round(surah.ayahCount / 3)) });
+  }, [surah.id, surah.ayahCount, recordReading]);
 
   // Back to the surah list by clearing the store selection.
   const goBack = () => useAppStore.setState({ selectedSurahId: null });
@@ -296,6 +340,22 @@ function SurahReading({ surah }: { surah: Surah }) {
                 {surah.revelationType}
               </span>
             </div>
+            <button
+              onClick={() => setAudioSurah(isCurrentAudio ? null : surah.id)}
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary-foreground/15 px-5 py-2 text-sm font-medium text-primary-foreground backdrop-blur transition-colors hover:bg-primary-foreground/25"
+            >
+              {isCurrentAudio ? (
+                <>
+                  <Pause className="h-4 w-4" />
+                  Stop recitation
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Listen to recitation
+                </>
+              )}
+            </button>
           </div>
         </Card>
       </motion.div>
@@ -345,6 +405,7 @@ function SurahReading({ surah }: { surah: Surah }) {
             >
               <AyahRow
                 ayah={ayah}
+                surahId={surah.id}
                 favorited={isFav}
                 onToggleFavorite={() => toggleFavorite(favId)}
               />
@@ -371,15 +432,21 @@ function SurahReading({ surah }: { surah: Surah }) {
 
 function AyahRow({
   ayah,
+  surahId,
   favorited,
   onToggleFavorite,
 }: {
   ayah: Ayah;
+  surahId: number;
   favorited: boolean;
   onToggleFavorite: () => void;
 }) {
+  const setAudioSurah = useAppStore((s) => s.setAudioSurah);
+  const audioSurahId = useAppStore((s) => s.audioSurahId);
+  const isPlayingThis = audioSurahId === surahId;
+
   return (
-    <Card className="group relative rounded-2xl border-border/60 bg-card p-4 transition-all hover:border-emerald/30 hover:shadow-md sm:p-5">
+    <Card className="group card-refined relative rounded-2xl border-border/60 bg-card p-4 transition-all hover:border-emerald/30 sm:p-5">
       {/* Favorite button */}
       <button
         type="button"
@@ -399,23 +466,69 @@ function AyahRow({
       </button>
 
       <div className="flex items-start gap-3 pr-10">
-        {/* Circular ayah number badge */}
-        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gold to-gold/70 opacity-95 shadow-sm" />
-          <span className="relative z-10 text-xs font-bold text-primary-foreground">
+        {/* Octagonal ayah number medallion */}
+        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
+          <svg viewBox="0 0 44 44" className="absolute inset-0 h-full w-full">
+            <rect
+              x="11"
+              y="11"
+              width="22"
+              height="22"
+              rx="3"
+              transform="rotate(0 22 22)"
+              className="fill-gold"
+              opacity="0.95"
+            />
+            <rect
+              x="13"
+              y="13"
+              width="16"
+              height="16"
+              rx="2"
+              transform="rotate(45 22 22)"
+              className="fill-emerald"
+              opacity="0.85"
+            />
+          </svg>
+          <span className="relative z-10 text-xs font-bold text-primary-foreground tabular-nums">
             {ayah.number}
           </span>
         </div>
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          {/* Arabic */}
-          <p className="text-right font-arabic text-2xl leading-loose text-foreground sm:text-3xl">
-            {ayah.arabic}
-          </p>
+          {/* Arabic with verse-end ornament */}
+          <div className="flex flex-wrap items-end justify-end gap-1">
+            <p className="text-right font-arabic text-2xl leading-loose text-foreground sm:text-3xl">
+              {ayah.arabic}
+            </p>
+            <span
+              className="mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gold-soft/40 text-[10px] font-bold text-accent-foreground tabular-nums"
+              title={`Ayah ${ayah.number}`}
+            >
+              {ayah.number}
+            </span>
+          </div>
+
+          {/* Action row: play + transliteration */}
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAudioSurah(isPlayingThis ? null : surahId)}
+              className="flex items-center gap-1.5 rounded-full bg-emerald-soft px-3 py-1 text-xs font-medium text-emerald transition-colors hover:bg-emerald hover:text-primary-foreground"
+              aria-label={isPlayingThis ? "Stop recitation" : "Play this surah"}
+            >
+              {isPlayingThis ? (
+                <Pause className="h-3 w-3" />
+              ) : (
+                <Play className="h-3 w-3" />
+              )}
+              {isPlayingThis ? "Playing" : "Recite"}
+            </button>
+          </div>
 
           {/* Transliteration */}
-          <p className="mt-2 text-sm italic text-muted-foreground">
+          <p className="mt-3 text-sm italic text-muted-foreground">
             {ayah.transliteration}
           </p>
 

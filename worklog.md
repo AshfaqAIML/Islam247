@@ -262,3 +262,46 @@ The Islam24x7 platform was previously complete with 11 views (Home, Library, Rea
 - **Favorites IDs**: The Favorites view resolves favorite IDs by string-prefix matching (`ayah-`, `hadith-`, `nawawi-`, `name-`, `dua-`, else raw book id). If future features add new favorite ID schemes, they must be added to the resolver in `favorites-view.tsx`.
 - **Performance**: 99 Names renders 99 cards + 42 hadith cards on one page. Currently fine, but for very large content sets consider virtualization (e.g. `@tanstack/react-virtual`).
 - **Recommended next priorities**: (1) Integrate a real Hijri calendar API for exact dates. (2) Add a "Quran audio player" feature (per-surah recitation) — high user value. (3) Add reading-goal / streak tracking in the Reader. (4) Improve the AI Assistant to support follow-up questions with citation chips that jump to the cited surah/hadith. (5) Add PWA service worker for offline reading.
+
+---
+Task ID: CRON-2
+Agent: cron-review-agent
+Task: QA testing + 3 new features (Quran Audio Player, Reading Streak & Stats, AI Citations) + styling polish
+
+## Current project status description/assessment
+The Islam24x7 platform had 15 views (Home, Library, Reader, Quran, Hadith, Hadith40, Duas, Prayer, Search, AI, Tasbeeh, Names, Favorites, Calendar, Download), all functional and lint-clean. This cron round focused on the highest-value next-phase features recommended in the previous worklog: (1) Quran audio recitation, (2) reading streak/stats tracking, (3) AI assistant with clickable citations and follow-up questions. QA confirmed the platform was stable with no runtime errors before starting.
+
+## Current goals/completed modifications/verification results
+
+### 1. Quran Audio Player (new feature)
+- **Store**: Added audio player session state to `store.ts` — `audioSurahId`, `audioReciter` (default "ar.alafasy"), `audioIsPlaying`, `audioCurrentTime`, `audioDuration`, plus setters `setAudioSurah`, `setAudioReciter`, `setAudioPlaying`, `setAudioTime`. Not persisted (session-only).
+- **Component**: Created `src/components/islamic/audio-player.tsx` — a fixed-bottom floating player bar (`AudioPlayer` → keyed `PlayerBar` inner component that remounts on surah change, cleanly resetting `currentAyah` to 1 via lazy initializer). Uses the everyayah.com CDN (`https://everyayah.com/data/{reciter}/{:03d}{:03d}.mp3`) for per-ayah MP3s. Features: play/pause, previous/next ayah (auto-advances on ayah end), seek slider, time display, mute toggle, reciter selector (6 reciters: Alafasy, Abdul Basit Murattal, Husary, Minshawi, Sudais, Shatri), loading spinner, close button. Spring-animated entrance/exit via framer-motion. Positioned above the mobile bottom nav (`bottom-16` on mobile, `bottom-4` on desktop).
+- **Integration**: Added play buttons to (a) each `SurahCard` in the Quran list (hover-reveal emerald circle, turns gold when playing), (b) the `SurahReading` header card (a "Listen to recitation" / "Stop recitation" pill button), and (c) each `AyahRow` (a "Recite"/"Playing" pill). All use `setAudioSurah(id)` to open the player.
+- **Wiring**: Added `<AudioPlayer />` to `page.tsx` after `<BottomNav />`.
+- **Lint refactor**: Had to refactor the audio player 3 times to satisfy the `react-hooks/set-state-in-effect` and `react-hooks/refs` rules — final solution uses a keyed inner component for surah-change resets and event-handler-driven `loading` state (no setState in effect bodies).
+
+### 2. Reading Streak & Stats Tracking (new feature)
+- **Store**: Added `readingStats: Record<string, ReadingStat>` (keyed by YYYY-MM-DD, each with `chaptersRead`, `ayahsRead`, `minutesRead`), `lastReadDate`, `recordReading({chapters, ayahs, minutes})` action, `getStreak()` (counts consecutive days backward from today, tolerating an empty today), `getTotalStats()` (aggregates all-time totals). All persisted via the existing Zustand persist middleware.
+- **Tracking**: Wired `recordReading` into (a) the Reader view's chapter-change effect (records 1 chapter + estimated minutes from page count), and (b) the Quran `SurahReading` mount effect (records ayahCount ayahs + estimated minutes).
+- **Widget**: Created `src/components/islamic/reading-stats-widget.tsx` (`ReadingStatsWidget`) — added to the Home view. Shows: a large streak flame (gold gradient when streak > 0, muted when 0) with day count, 3 stat chips (chapters/ayahs/reading-minutes), a 7-day animated bar chart (emerald for past days, gold for today, animated height on mount), active-days count, and a contextual CTA ("Browse Library" when no reading yet, "Read Quran" when active). VLM rated it 8/10.
+
+### 3. AI Assistant Citations + Follow-ups (new feature)
+- **Backend**: Updated `src/app/api/ai/route.ts` — enhanced the system prompt to require a structured output format with `[[CITATIONS]]` (Type | Reference per line) and `[[FOLLOWUPS]]` (3 follow-up questions) sections. Added a `parseResponse()` function that extracts citations (typed: Quran/Hadith/Scholar/Book/Other) and follow-ups, strips the sections from the displayed answer, and returns `{ answer, citations, followups }` in the API response.
+- **Frontend**: Updated `src/components/islamic/ai-view.tsx` — extended the `Message` interface with optional `citations` and `followups`. After each assistant answer, renders a "Sources" section with clickable citation chips (emerald for Quran, gold for Hadith, neutral for others) and an "Ask follow-up" section with clickable question chips that call `sendQuestion(f)`. Added `handleCitationClick()` that navigates to the relevant view: Quran citations open the matching surah (matched by name), Hadith citations open the matching collection, Scholar/Book citations go to the Library.
+- **Verified live**: Asked "What are the five pillars of Islam?" — received answer + 6 citation chips (Surah Al-Ma'idah 5:1, Sahih al-Bukhari #8, Sahih Muslim #16, Sahih al-Bukhari #45, Sahih al-Bukhari #1866, Imam an-Nawawi Forty Hadith) + 3 follow-up question chips. Clicking the "Sahih al-Bukhari #8" chip navigated to the Hadith view and opened the Bukhari collection.
+
+### 4. Styling polish — enhanced Quran ayah view
+- Upgraded the `AyahRow` component: replaced the plain circular number badge with an **octagonal star medallion** (two rotated SVG rects — gold + emerald, matching the brand StarMark), added a **verse-end ornament** (small gold-bordered circle with the ayah number after the Arabic text, mimicking traditional mushaf formatting), added a per-ayah **"Recite"/"Playing" pill button** that toggles the audio player, and applied the `card-refined` class for hover depth. VLM rated the enhanced ayah view **9/10** ("elegant dark theme, thoughtful contrast, professional layout hierarchy, polished UI elements... no significant issues").
+
+### Verification results
+- **Lint**: `bun run lint` → 0 errors, 0 warnings (clean) throughout all changes.
+- **agent-browser QA**: All features tested working — Home reading-stats widget (empty + active states), Quran audio player (play button on surah cards, surah header, and per-ayah; player bar with all controls; reciter selector), AI assistant (real LLM response with parsed citations + follow-ups; citation chip click navigates correctly), enhanced ayah view (octagonal medallions + recite pills render). No console errors after fresh reload.
+- **VLM assessments**: Reading stats widget 8/10, enhanced ayah view 9/10.
+- **Dev log**: Clean compiles, `POST /api/ai 200` responses, no runtime errors.
+
+## Unresolved issues or risks, and priority recommendations for the next phase
+- **Audio CDN dependency**: The audio player relies on everyayah.com being reachable. If the CDN is down or blocked, audio won't play (graceful: the play promise rejects and the player shows paused state). Consider bundling fallback audio or proxying.
+- **Streak edge cases**: The `getStreak()` implementation tolerates an empty "today" (counts from yesterday), but doesn't handle timezone-adjacent date-line edge cases. Adequate for typical use.
+- **AI citation parsing**: The parser relies on the LLM following the `[[CITATIONS]]` / `[[FOLLOWUPS]]` format exactly. If the LLM deviates, citations may be missing — the UI degrades gracefully (no Sources section shown). Could add a fallback regex to extract "Surah X N:M" and "Sahih X #N" patterns from the raw answer.
+- **Citation matching**: `handleCitationClick` matches surahs/collections by name substring. Works for the 8 surahs + 4 collections in our demo data, but won't match surahs not in our dataset (e.g., "Surah Al-Ma'idah" isn't in our 8-surah demo set, so that chip just navigates to the Quran list view). Adding the full 114 surahs would make citation navigation precise.
+- **Recommended next priorities**: (1) Expand the Quran dataset to all 114 surahs (or at least the last 30 short surahs) so audio + citation navigation is complete. (2) Add a "Qibla finder" with device-orientation compass (already in Prayer view, could be enhanced). (3) Add bookmark/note-taking in the Reader. (4) Add a "daily goal" setting (e.g., read N ayahs/day) with progress in the stats widget. (5) PWA service worker for offline reading + cached audio.

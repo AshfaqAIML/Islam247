@@ -74,6 +74,7 @@ function ReaderContent({ book }: { book: Book }) {
   const setReaderTheme = useAppStore((s) => s.setReaderTheme);
   const readingProgress = useAppStore((s) => s.readingProgress);
   const updateReadingProgress = useAppStore((s) => s.updateReadingProgress);
+  const recordReading = useAppStore((s) => s.recordReading);
 
   // Initialize chapter index from persisted progress on mount.
   const [chapterIndex, setChapterIndex] = useState<number>(() => {
@@ -105,12 +106,14 @@ function ReaderContent({ book }: { book: Book }) {
       scrollPercent: ((chapterIndex + 1) / total) * 100,
       lastRead: Date.now(),
     });
+    // Record reading stats: 1 chapter + approximate minutes from page count.
+    recordReading({ chapters: 1, minutes: Math.max(1, Math.round(chapter.pages / 2)) });
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [book.id, book.chapters, chapter, chapterIndex, total, updateReadingProgress]);
+  }, [book.id, book.chapters, chapter, chapterIndex, total, updateReadingProgress, recordReading]);
 
   if (!chapter) {
     return (

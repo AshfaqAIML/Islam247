@@ -15,6 +15,8 @@ import {
   Hand,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { quranData } from "@/lib/data/quran";
+import { hadithCollections } from "@/lib/data/hadith";
 import { StarMark, StarDivider } from "./star-mark";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,9 +24,16 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+interface Citation {
+  type: string;
+  reference: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
+  citations?: Citation[];
+  followups?: string[];
 }
 
 const SCOPE_OPTIONS = [
@@ -90,6 +99,8 @@ export function AiView() {
       const assistantMsg: Message = {
         role: "assistant",
         content: data.response || "I apologize, but I could not generate a response.",
+        citations: Array.isArray(data.citations) ? data.citations : [],
+        followups: Array.isArray(data.followups) ? data.followups : [],
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch {
@@ -121,6 +132,44 @@ export function AiView() {
   const clearChat = () => {
     setMessages([]);
     setInput("");
+  };
+
+  const selectSurah = useAppStore((s) => s.selectSurah);
+  const selectHadithCollection = useAppStore((s) => s.selectHadithCollection);
+  const setView = useAppStore((s) => s.setView);
+
+  const handleCitationClick = (c: Citation) => {
+    const type = c.type.toLowerCase();
+    const ref = c.reference.toLowerCase();
+    if (type === "quran") {
+      // Try to find a matching surah in our dataset by name keyword.
+      const surahMatch = quranData.find(
+        (s) =>
+          ref.includes(s.name.toLowerCase()) ||
+          ref.includes(s.englishName.toLowerCase())
+      );
+      if (surahMatch) {
+        selectSurah(surahMatch.id);
+        setView("quran");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      setView("quran");
+    } else if (type === "hadith") {
+      // Try to find a matching hadith collection.
+      const colMatch = hadithCollections.find(
+        (col) =>
+          ref.includes(col.name.toLowerCase()) ||
+          ref.includes(col.id.toLowerCase())
+      );
+      if (colMatch) {
+        selectHadithCollection(colMatch.id);
+      }
+      setView("hadith");
+    } else if (type === "scholar" || type === "book") {
+      setView("library");
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -258,6 +307,65 @@ export function AiView() {
                     <div className="whitespace-pre-wrap text-sm leading-relaxed">
                       {msg.content}
                     </div>
+                    {/* Citations */}
+                    {msg.role === "assistant" &&
+                      msg.citations &&
+                      msg.citations.length > 0 && (
+                        <div className="mt-3 border-t border-border/40 pt-3">
+                          <p className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            <BookOpen className="h-3 w-3" />
+                            Sources
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {msg.citations.map((c, ci) => {
+                              const isQuran = c.type.toLowerCase() === "quran";
+                              const isHadith = c.type.toLowerCase() === "hadith";
+                              return (
+                                <button
+                                  key={ci}
+                                  onClick={() => handleCitationClick(c)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                                    isQuran
+                                      ? "border-emerald/30 bg-emerald-soft/50 text-emerald hover:bg-emerald-soft"
+                                      : isHadith
+                                        ? "border-gold/30 bg-gold-soft/50 text-accent-foreground hover:bg-gold-soft"
+                                        : "border-border/60 bg-card text-muted-foreground hover:text-foreground"
+                                  )}
+                                  title={isQuran ? "Open in Quran" : isHadith ? "Open in Hadith" : undefined}
+                                >
+                                  {isQuran && <BookOpen className="h-2.5 w-2.5" />}
+                                  {isHadith && <Library className="h-2.5 w-2.5" />}
+                                  {c.reference}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    {/* Follow-up suggestions */}
+                    {msg.role === "assistant" &&
+                      msg.followups &&
+                      msg.followups.length > 0 && (
+                        <div className="mt-3 border-t border-border/40 pt-3">
+                          <p className="mb-1.5 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            <Sparkles className="h-3 w-3" />
+                            Ask follow-up
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {msg.followups.map((f, fi) => (
+                              <button
+                                key={fi}
+                                onClick={() => sendQuestion(f)}
+                                disabled={loading}
+                                className="rounded-full border border-emerald/20 bg-background/50 px-3 py-1 text-[11px] text-foreground transition-colors hover:border-emerald/40 hover:bg-emerald-soft/40 disabled:opacity-50"
+                              >
+                                {f}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 </motion.div>
               ))}

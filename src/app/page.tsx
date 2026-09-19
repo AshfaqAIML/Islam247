@@ -19,6 +19,7 @@ import { TasbeehView } from "@/components/islamic/tasbeeh-view";
 import { NamesView } from "@/components/islamic/names-view";
 import { FavoritesView } from "@/components/islamic/favorites-view";
 import { CalendarView } from "@/components/islamic/calendar-view";
+import { AudioPlayer } from "@/components/islamic/audio-player";
 import { DownloadView } from "@/components/islamic/download-view";
 
 function ViewRouter() {
@@ -75,6 +76,7 @@ export default function Home() {
         </main>
         <Footer />
         <BottomNav />
+        <AudioPlayer />
       </div>
     </ThemeProvider>
   );
