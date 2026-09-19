@@ -10,11 +10,15 @@ import { LibraryView } from "@/components/islamic/library-view";
 import { ReaderView } from "@/components/islamic/reader-view";
 import { QuranView } from "@/components/islamic/quran-view";
 import { HadithView } from "@/components/islamic/hadith-view";
+import { Hadith40View } from "@/components/islamic/hadith40-view";
 import { DuasView } from "@/components/islamic/duas-view";
 import { PrayerView } from "@/components/islamic/prayer-view";
 import { SearchView } from "@/components/islamic/search-view";
 import { AiView } from "@/components/islamic/ai-view";
 import { TasbeehView } from "@/components/islamic/tasbeeh-view";
+import { NamesView } from "@/components/islamic/names-view";
+import { FavoritesView } from "@/components/islamic/favorites-view";
+import { CalendarView } from "@/components/islamic/calendar-view";
 import { DownloadView } from "@/components/islamic/download-view";
 
 function ViewRouter() {
@@ -31,6 +35,8 @@ function ViewRouter() {
       return <QuranView />;
     case "hadith":
       return <HadithView />;
+    case "hadith40":
+      return <Hadith40View />;
     case "duas":
       return <DuasView />;
     case "prayer":
@@ -41,6 +47,12 @@ function ViewRouter() {
       return <AiView />;
     case "tasbeeh":
       return <TasbeehView />;
+    case "names":
+      return <NamesView />;
+    case "favorites":
+      return <FavoritesView />;
+    case "calendar":
+      return <CalendarView />;
     case "download":
       return <DownloadView />;
     default:

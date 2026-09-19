@@ -5,11 +5,15 @@ export type ViewId =
   | "reader"
   | "quran"
   | "hadith"
+  | "hadith40"
   | "duas"
   | "prayer"
   | "search"
   | "ai"
   | "tasbeeh"
+  | "names"
+  | "favorites"
+  | "calendar"
   | "download";
 
 export type BookCategory = "Fiqh" | "Tafsir" | "Aqeedah" | "Seerah" | "History";

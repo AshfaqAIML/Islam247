@@ -141,7 +141,18 @@
 .font-arabic {
   font-family: var(--font-amiri), 'Amiri', 'Scheherazade New', serif;
   direction: rtl;
-  line-height: 2.1;
+  line-height: 2.4;
+  letter-spacing: 0;
+  word-spacing: 0.05em;
+}
+
+/* Large display Arabic (for surah headers, ayah of the day) */
+.font-arabic-display {
+  font-family: var(--font-amiri), 'Amiri', 'Scheherazade New', serif;
+  direction: rtl;
+  line-height: 2.2;
+  letter-spacing: 0.02em;
+  font-weight: 700;
 }
 
 /* Islamic geometric pattern background */
@@ -169,10 +180,11 @@
   background-size: 30px 30px;
 }
 
-/* Decorative top border */
+/* Decorative top border — never intercepts pointer events */
 .ornamental-border {
   background: linear-gradient(90deg, transparent, var(--gold), var(--emerald), var(--gold), transparent);
   height: 3px;
+  pointer-events: none;
 }
 
 /* Smooth scrollbar */
@@ -215,6 +227,82 @@
 }
 .emerald-glow {
   box-shadow: 0 0 0 1px color-mix(in oklch, var(--emerald) 20%, transparent), 0 4px 24px -6px color-mix(in oklch, var(--emerald) 30%, transparent);
+}
+
+/* Refined card with subtle depth */
+.card-refined {
+  box-shadow:
+    0 1px 2px 0 color-mix(in oklch, var(--emerald) 5%, transparent),
+    0 1px 3px 0 color-mix(in oklch, var(--foreground) 4%, transparent);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+.card-refined:hover {
+  box-shadow:
+    0 4px 12px -2px color-mix(in oklch, var(--emerald) 12%, transparent),
+    0 2px 6px -1px color-mix(in oklch, var(--foreground) 6%, transparent);
+}
+
+/* Gold heading accent — for emphasis on key titles */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--gold), color-mix(in oklch, var(--gold) 60%, var(--emerald)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.text-gradient-emerald {
+  background: linear-gradient(135deg, var(--emerald), color-mix(in oklch, var(--emerald) 60%, var(--gold)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Animated hero shimmer */
+@keyframes hero-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.hero-gradient {
+  background: linear-gradient(120deg,
+    color-mix(in oklch, var(--emerald-soft) 80%, transparent),
+    color-mix(in oklch, var(--background) 60%, transparent),
+    color-mix(in oklch, var(--gold-soft) 70%, transparent),
+    color-mix(in oklch, var(--background) 60%, transparent),
+    color-mix(in oklch, var(--emerald-soft) 80%, transparent)
+  );
+  background-size: 300% 300%;
+  animation: hero-shimmer 12s ease infinite;
+}
+
+/* Slow rotating star — for hero decoration */
+@keyframes slow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-slow-spin {
+  animation: slow-spin 60s linear infinite;
+}
+@keyframes slow-spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+.animate-slow-spin-reverse {
+  animation: slow-spin-reverse 90s linear infinite;
+}
+
+/* Floating animation for decorative elements */
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.animate-float-soft {
+  animation: float-soft 4s ease-in-out infinite;
+}
+
+/* Gold underline accent for active nav */
+.nav-active-glow {
+  box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--emerald) 40%, transparent);
 }
 
 /* Decorative divider with star */

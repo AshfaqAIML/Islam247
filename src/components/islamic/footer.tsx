@@ -65,8 +65,8 @@ export function Footer() {
               {[
                 { label: "Prayer Times", view: "prayer" as ViewId, icon: Compass },
                 { label: "Tasbeeh Counter", view: "tasbeeh" as ViewId, icon: Heart },
-                { label: "AI Assistant", view: "ai" as ViewId, icon: BookOpen },
-                { label: "Global Search", view: "search" as ViewId, icon: BookOpen },
+                { label: "Hijri Calendar", view: "calendar" as ViewId, icon: BookOpen },
+                { label: "Favorites", view: "favorites" as ViewId, icon: BookOpen },
               ].map((l) => (
                 <li key={l.view}>
                   <button
@@ -80,6 +80,25 @@ export function Footer() {
               ))}
             </ul>
           </div>
+        </div>
+
+        {/* Discover row */}
+        <div className="mt-6 flex flex-wrap gap-2 border-t border-border/40 pt-4">
+          {([
+            { id: "names" as ViewId, label: "99 Names" },
+            { id: "hadith40" as ViewId, label: "40 Hadith" },
+            { id: "ai" as ViewId, label: "AI Assistant" },
+            { id: "search" as ViewId, label: "Search" },
+            { id: "download" as ViewId, label: "Download" },
+          ]).map((l) => (
+            <button
+              key={l.id}
+              onClick={() => navigate(l.id)}
+              className="rounded-full border border-border/40 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-emerald/30 hover:text-emerald"
+            >
+              {l.label}
+            </button>
+          ))}
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-border/60 pt-6 text-xs text-muted-foreground sm:flex-row">

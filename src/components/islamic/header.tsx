@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Moon, Sun, Search, Menu, X } from "lucide-react";
+import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download } from "lucide-react";
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
@@ -14,6 +14,14 @@ import {
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 const navItems: { id: ViewId; label: string }[] = [
@@ -94,6 +102,19 @@ export function Header() {
               )}
             </button>
           ))}
+          {/* More dropdown for discover views */}
+          <MoreDropdown
+            currentView={view}
+            onNavigate={navigate}
+            activeDiscover={
+              view === "names" ||
+              view === "hadith40" ||
+              view === "calendar" ||
+              view === "favorites" ||
+              view === "tasbeeh" ||
+              view === "download"
+            }
+          />
         </nav>
 
         {/* Search (desktop) */}
@@ -175,32 +196,117 @@ export function Header() {
                   {item.label}
                 </button>
               ))}
-              <button
-                onClick={() => navigate("tasbeeh")}
-                className={cn(
-                  "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
-                  view === "tasbeeh"
-                    ? "bg-emerald-soft text-emerald"
-                    : "text-foreground hover:bg-muted"
-                )}
-              >
-                Tasbeeh Counter
-              </button>
-              <button
-                onClick={() => navigate("download")}
-                className={cn(
-                  "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
-                  view === "download"
-                    ? "bg-emerald-soft text-emerald"
-                    : "text-foreground hover:bg-muted"
-                )}
-              >
-                Download App
-              </button>
+              <div className="my-2 border-t border-border/40" />
+              <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Discover
+              </p>
+              {[
+                { id: "names" as ViewId, label: "99 Names of Allah" },
+                { id: "hadith40" as ViewId, label: "40 Hadith Nawawi" },
+                { id: "calendar" as ViewId, label: "Hijri Calendar" },
+                { id: "favorites" as ViewId, label: "Favorites" },
+                { id: "tasbeeh" as ViewId, label: "Tasbeeh Counter" },
+                { id: "download" as ViewId, label: "Download App" },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(item.id)}
+                  className={cn(
+                    "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                    view === item.id
+                      ? "bg-emerald-soft text-emerald"
+                      : "text-foreground hover:bg-muted"
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
           </SheetContent>
         </Sheet>
       </div>
     </header>
+  );
+}
+
+const moreItems: {
+  id: ViewId;
+  label: string;
+  desc: string;
+  icon: typeof Star;
+}[] = [
+  { id: "names", label: "99 Names of Allah", desc: "Asma ul Husna", icon: Star },
+  { id: "hadith40", label: "40 Hadith Nawawi", desc: "Foundational hadiths", icon: ScrollText },
+  { id: "calendar", label: "Hijri Calendar", desc: "Islamic dates & events", icon: Calendar },
+  { id: "favorites", label: "Favorites", desc: "Your saved items", icon: Bookmark },
+  { id: "tasbeeh", label: "Tasbeeh Counter", desc: "Dhikr counter", icon: Heart },
+  { id: "download", label: "Download App", desc: "Android APK", icon: Download },
+];
+
+function MoreDropdown({
+  currentView,
+  onNavigate,
+  activeDiscover,
+}: {
+  currentView: ViewId;
+  onNavigate: (v: ViewId) => void;
+  activeDiscover: boolean;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "relative flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            activeDiscover
+              ? "text-emerald"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          More
+          <ChevronDown className="h-3.5 w-3.5" />
+          {activeDiscover && (
+            <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-gradient-to-r from-emerald to-gold" />
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="w-64 border-border/60 bg-popover"
+      >
+        <DropdownMenuLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Discover
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {moreItems.map((item) => {
+          const active = currentView === item.id;
+          return (
+            <DropdownMenuItem
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              className={cn(
+                "flex cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2",
+                active && "bg-emerald-soft"
+              )}
+            >
+              <span
+                className={cn(
+                  "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                  active ? "bg-emerald text-primary-foreground" : "bg-emerald-soft text-emerald"
+                )}
+              >
+                <item.icon className="h-3.5 w-3.5" />
+              </span>
+              <span className="flex flex-col">
+                <span className={cn("text-sm font-medium", active ? "text-emerald" : "text-foreground")}>
+                  {item.label}
+                </span>
+                <span className="text-xs text-muted-foreground">{item.desc}</span>
+              </span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

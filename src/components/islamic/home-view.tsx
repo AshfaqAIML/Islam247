@@ -13,6 +13,10 @@ import {
   Hand,
   ChevronRight,
   RotateCcw,
+  ScrollText,
+  Star,
+  Calendar,
+  Bookmark,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
@@ -75,6 +79,34 @@ const quickAccess: {
     icon: Sparkles,
     color: "from-yellow-500 to-amber-600",
   },
+  {
+    id: "names",
+    label: "99 Names",
+    desc: "Asma ul Husna",
+    icon: Star,
+    color: "from-amber-500 to-yellow-600",
+  },
+  {
+    id: "hadith40",
+    label: "40 Hadith",
+    desc: "Imam an-Nawawi",
+    icon: ScrollText,
+    color: "from-emerald-600 to-teal-700",
+  },
+  {
+    id: "calendar",
+    label: "Hijri Calendar",
+    desc: "Islamic dates",
+    icon: Calendar,
+    color: "from-teal-500 to-cyan-700",
+  },
+  {
+    id: "favorites",
+    label: "Favorites",
+    desc: "Saved items",
+    icon: Bookmark,
+    color: "from-rose-500 to-pink-600",
+  },
 ];
 
 export function HomeView() {
@@ -118,18 +150,32 @@ export function HomeView() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative overflow-hidden rounded-3xl border border-emerald/20 bg-gradient-to-br from-emerald-soft via-background to-gold-soft p-6 sm:p-10"
+        className="relative overflow-hidden rounded-3xl border border-emerald/20 hero-gradient p-6 sm:p-10"
       >
-        <div className="star-lattice opacity-[0.06]" />
+        <div className="star-lattice opacity-[0.07]" />
+        {/* Decorative rotating star composition */}
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 opacity-[0.08]">
+          <div className="animate-slow-spin">
+            <StarMark className="h-full w-full" />
+          </div>
+        </div>
+        <div className="pointer-events-none absolute -bottom-20 right-24 h-40 w-40 opacity-[0.06]">
+          <div className="animate-slow-spin-reverse">
+            <StarMark className="h-full w-full" showGold={false} />
+          </div>
+        </div>
         <div className="relative z-10 flex flex-col items-start gap-4">
           <div className="flex items-center gap-3">
-            <StarMark className="h-12 w-12" />
+            <div className="animate-float-soft">
+              <StarMark className="h-12 w-12 drop-shadow-sm" />
+            </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-sm font-medium text-emerald">
                 {greeting}
               </p>
-              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-                Welcome to Islam24x7
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Welcome to{" "}
+                <span className="text-gradient-emerald">Islam24x7</span>
               </h1>
             </div>
           </div>
@@ -141,7 +187,7 @@ export function HomeView() {
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => navigate("quran")}
-              className="rounded-full bg-emerald text-primary-foreground hover:bg-emerald/90"
+              className="rounded-full bg-emerald text-primary-foreground shadow-md hover:bg-emerald/90"
             >
               <BookOpen className="mr-2 h-4 w-4" />
               Read Quran
@@ -149,10 +195,18 @@ export function HomeView() {
             <Button
               onClick={() => navigate("ai")}
               variant="outline"
-              className="rounded-full border-gold/40 text-emerald hover:bg-gold-soft"
+              className="rounded-full border-gold/40 text-emerald hover:bg-gold-soft hover:text-accent-foreground"
             >
               <Sparkles className="mr-2 h-4 w-4" />
               Ask AI Assistant
+            </Button>
+            <Button
+              onClick={() => navigate("names")}
+              variant="ghost"
+              className="rounded-full text-muted-foreground hover:bg-emerald-soft hover:text-emerald"
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-gold" />
+              99 Names of Allah
             </Button>
           </div>
         </div>

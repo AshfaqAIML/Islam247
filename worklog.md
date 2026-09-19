@@ -159,3 +159,106 @@ Stage Summary:
 - Persisted state: reading progress, tasbeeh totals, dua counters, favorites, reader settings all survive page reloads via Zustand persist middleware.
 - Lint passes clean (0 errors). Dev server runs on port 3000. All API routes working.
 - Content integrity: all Quran verses, hadith, and duas use authentic public religious text with proper references; demo badges shown where applicable.
+
+---
+Task ID: F1-NAMES
+Agent: view-99-names
+Task: Build 99 Names of Allah (Asma ul Husna) view
+
+Work Log:
+- Read prior worklog and reference files: src/lib/types.ts (ViewId includes "names"), src/lib/store.ts (Zustand store with view/setView, favorites/toggleFavorite), src/lib/data/names.ts (namesOfAllah + namesVirtue + DivineName), src/components/islamic/star-mark.tsx (StarMark/StarDivider/StarLattice), src/components/islamic/home-view.tsx + quran-view.tsx (design pattern references), globals.css (emerald/gold tokens, hero-gradient, card-refined, font-arabic, font-arabic-display, animate-slow-spin, star-lattice), and shadcn ui/dialog.tsx, ui/tooltip.tsx, ui/badge.tsx, ui/input.tsx, ui/card.tsx to confirm APIs.
+- Created src/components/islamic/names-view.tsx (NamesView):
+  - Hero header card with hero-gradient bg, StarLattice overlay (opacity 0.06), decorative slowly-rotating StarMark in the top-right corner (opacity 0.08, animate-slow-spin), centered large Arabic title "أَسْمَاءُ اللَّهِ الْحُسْنَى" via font-arabic-display in emerald, StarDivider, English subtitle "The 99 Most Beautiful Names of Allah" + helper subtitle.
+  - Virtue card below hero: gold-tinted card (border-gold/20 + bg-gold-soft/10) with Sparkles icon tile, "The Virtue" label, and namesVirtue text styled as an italic blockquote. Decorative StarMark watermark in the corner.
+  - Rounded-full search Input (h-11) with leading Search icon filtering names by exact number, or substring match on transliteration (lowercased), english (lowercased), or arabic (raw, RTL). Shows "Showing X of 99 names" count.
+  - Empty-state Card (dashed) with Search icon + "Clear search" button when nothing matches.
+  - Responsive grid of NameCard components: grid-cols-2 / sm:grid-cols-3 / lg:grid-cols-4 / xl:grid-cols-5. Staggered framer-motion fade-in-up entrance (parent variants with staggerChildren 0.025, child variants y:16→0 duration 0.35).
+  - Wrapped grid in TooltipProvider (delayDuration 200) so each card's favorite Tooltip shares one provider.
+  - NameCard: outer is motion.div with role="button" + tabIndex={0} + onKeyDown(Enter/Space) handler (NOT a <button> — avoids nested-button invalid HTML, since the favorite heart inside IS a real button). Number badge top-left = circular emerald-gradient (from-emerald to-emerald/70) with the number in primary-foreground. Favorite heart button top-right = rounded bg-background/60 backdrop-blur, fill-gold when favorited, calls toggleFavorite(`name-${number}`). Arabic name centered via font-arabic text-2xl text-emerald leading-loose. Transliteration font-semibold. English italic text-sm muted-foreground. "Tap to view meaning" hint at bottom (mt-auto) with Hash icon, hover color → emerald. Uses card-refined + hover lift + emerald border highlight + focus-visible ring.
+  - Tooltip on the heart button shows "In favorites" / "Add to favorites".
+  - Detail Dialog (controlled: open when selectedName !== null, onClose clears it). DialogContent has showCloseButton={false}, p-0, gap-0, rounded-2xl, border-emerald/30, sm:max-w-md. Inner NameDetail returns a Fragment containing two grid items:
+    - Emerald gradient header banner (bg-gradient-to-br from-emerald to-emerald/80, primary-foreground text) with star-lattice opacity-0.12 overlay, corner StarMark watermark (opacity 0.15), custom top-right X close button (bg-primary-foreground/15 backdrop-blur), centered "Name N of 99" pill (with Hash icon), and large Arabic via font-arabic-display text-5xl/6xl.
+    - Body section: DialogHeader centered with transliteration (DialogTitle) + italic english (DialogDescription), StarDivider, "Meaning" label (emerald) + full meaning paragraph, gold-tinted virtue note box (Sparkles icon, references the Prophet's ﷺ hadith on enumerating the 99 names), and footer with outline favorite toggle button (gold-tinted when favorited) + emerald Close button.
+  - Also wired NamesView into src/app/page.tsx ViewRouter (imported NamesView, added `case "names": return <NamesView />;` so the home-view button actually navigates here).
+- Lint iteration: first pass — bunx eslint on the new file → 0 errors / 0 warnings. First pass on src/app/page.tsx → 0 errors. `bun run lint` over the entire project → exit 0, clean. `bunx tsc --noEmit` → no errors in new files. Dev server log shows clean compiles after the changes.
+
+Stage Summary:
+- One component delivered: src/components/islamic/names-view.tsx (NamesView) + 2-line wiring addition to src/app/page.tsx (ViewRouter case "names" + import).
+- Single-screen experience for the 99 Names of Allah: hero header (hero-gradient + StarLattice + slowly-rotating StarMark + large font-arabic-display Arabic title + StarDivider), gold-tinted virtue quote card (namesVirtue), rounded-full search filter (number/transliteration/english/arabic), responsive 2/3/4/5-col grid of staggered NameCards with circular emerald number badge + favorite heart Tooltip + tap-to-view-meaning hint + card-refined hover, and a controlled shadcn Dialog detail view (custom-close emerald gradient banner with font-arabic-display Arabic, transliteration + English titles, full meaning, gold virtue note, and footer favorite toggle + Close button).
+- Component is "use client", uses the existing Zustand store favorites/toggleFavorite (ids `name-1` … `name-99`), and aligns with the established emerald/gold + StarMark design language. Mobile-first responsive, accessible (role/tabindex/onKeyDown on card, aria-labels, Tooltip, Dialog focus management).
+- ESLint and TypeScript clean; no test files written; no new routes created; no external libraries added.
+
+---
+Task ID: F3-HADITH40
+Agent: view-40-hadith
+Task: Build 40 Hadith Nawawi view
+
+Work Log:
+- Read worklog.md, types.ts (ViewId includes "hadith40"), store.ts (favorites/toggleFavorite), data/forty-hadith.ts (42 NawawiHadith items), star-mark.tsx (StarMark/StarDivider/StarLattice), hadith-view.tsx + names-view.tsx (design references), globals.css (tokens/utilities), and the F1-NAMES agent record under /agent-ctx.
+- Created src/components/islamic/hadith40-view.tsx exporting Hadith40View ("use client").
+- Hero header: motion.header with hero-gradient bg, StarLattice overlay (opacity 0.06), decorative slowly-rotating StarMark in top-right corner (opacity 0.08 via animate-slow-spin), centered ScrollText emerald tile, large Arabic title "الأربعون النووية" via font-arabic-display in emerald, StarDivider, English subtitle "The Forty Hadith of Imam An-Nawawi", brief an-Nawawi description, and a gold "Demo content" Badge with Sparkles.
+- Search input: rounded-full Input (h-11) with leading Search icon. useMemo filter matches exact number, or substring on title/english/narrator (lowercased) or arabic (raw RTL substring).
+- Sticky-ish filter/sort bar: sticky top-0 z-20, bg-background/85 backdrop-blur, shows live count "N Hadiths of 42" with Library icon, and a favorites toggle button (heart icon; gold-tinted when active). When favoritesOnly is on, the list filters to hadiths whose "nawawi-N" id is in the persisted favorites array.
+- Empty-state Card (dashed border) with Search icon and helpful copy for no-match (different message for favorites-only vs regular search).
+- List of NawawiCard (max-w-3xl mx-auto, vertical stack, gap-4). Staggered framer-motion fade-in-up entrance (parent variants staggerChildren 0.06, child y:16->0 over 0.4s).
+- NawawiCard: card-refined Card with hover:border-emerald/30; top row has emerald circular number badge (h-12 w-12, gradient from-emerald to-emerald/70) + title (font-semibold text-lg truncate) + "Hadith N of 42" muted subtitle + favorite Heart button (absolute top-right, fill-gold text-gold when favorited, calls toggleFavorite("nawawi-N")).
+- Grade badge color-coded via gradeStyles map: "Sahih (Agreed Upon)" -> emerald + Check icon; "Sahih" -> emerald + Sparkles icon; "Hasan Sahih" & "Hasan" -> gold + Sparkles icon. Falls back to Sahih style.
+- Arabic block: bg-emerald-soft/30 rounded-xl p-4 with font-arabic text-xl sm:text-2xl leading-loose right-aligned.
+- Small StarDivider (my-3) between Arabic and English.
+- English translation text-base leading-relaxed text-foreground.
+- Narrator line: inline-flex with User icon (emerald/70), "Narrated by:" font-medium foreground/80 + italic narrator, text-sm text-muted-foreground.
+- Reference line: border-t border-border/40 pt-3, BookOpen icon + reference text in text-xs text-gold.
+- Edited src/app/page.tsx: added import { Hadith40View } and `case "hadith40": return <Hadith40View />;` branch in the ViewRouter switch.
+
+Stage Summary:
+- Two-file change: created src/components/islamic/hadith40-view.tsx (Hadith40View) + 2-line wiring addition to src/app/page.tsx (import + case "hadith40").
+- Single-screen experience for Imam An-Nawawi's 42 Hadith collection: hero header (hero-gradient + StarLattice + slowly-rotating StarMark + font-arabic-display "الأربعون النووية" + StarDivider + gold Demo content badge), rounded-full search filter (number/title/english/narrator/arabic), sticky filter bar with live count + favorites-only heart toggle, and a max-w-3xl vertical stack of staggered NawawiCards.
+- Each card: emerald circular number badge (h-12 w-12), truncated title, favorite Heart button (keyed "nawawi-N"), color-coded grade badge (Sahih/Agreed-Upon emerald with Check, Sahih emerald, Hasan Sahih / Hasan gold), Arabic block in bg-emerald-soft/30 with font-arabic, StarDivider, English translation, narrator line with User icon, reference line with BookOpen icon in gold, card-refined hover.
+- Component is "use client", uses existing Zustand store favorites/toggleFavorite (ids `nawawi-1` ... `nawawi-42`), aligns with established emerald/gold + StarMark design language. Mobile-first responsive, accessible (aria-labels / aria-pressed on favorite + favorites toggle, sticky bar backdrop blur, semantic structure).
+- ESLint clean (exit 0); dev.log shows clean compiles; no test files written; no new routes created beyond the existing single-page switch; no external libraries added.
+
+---
+Task ID: CRON-1
+Agent: cron-review-agent
+Task: QA testing + bug fixes + styling polish + 4 new feature views (99 Names, 40 Hadith, Favorites, Hijri Calendar)
+
+## Current project status description/assessment
+The Islam24x7 platform was previously complete with 11 views (Home, Library, Reader, Quran, Hadith, Duas, Prayer, Search, AI Assistant, Tasbeeh, Download), all functional and lint-clean. A cron-triggered review was performed: thorough agent-browser QA across all views plus VLM-based visual analysis of the Home and Search views in both light/dark modes. The platform was stable (no runtime errors, lint clean) but had visual polish gaps and untapped feature potential.
+
+## Current goals/completed modifications/verification results
+
+### Bug found & fixed
+- **BUG**: The `.ornamental-border` div (3px decorative top strip in header) was intercepting pointer events, covering the row of nav buttons just below it. agent-browser reported "Element is covered by <div.ornamental-border>". **Fix**: Added `pointer-events: none` to the `.ornamental-border` CSS rule in globals.css. Verified the nav buttons are now clickable.
+
+### Styling polish improvements (per VLM feedback)
+- **Arabic typography**: Improved `font-arabic` line-height from 2.1 → 2.4 with letter/word-spacing tuning for better readability of Quranic/Hadith text. Added new `font-arabic-display` class (line-height 2.2, bold) for large display Arabic in heroes.
+- **Card depth**: Added `.card-refined` utility with layered emerald-tinted box-shadows and smooth hover transitions (subtle lift + shadow on hover) — addresses VLM feedback that cards "blend too much into the background".
+- **Gold gradient text**: Added `.text-gradient-gold` and `.text-gradient-emerald` utilities (background-clip: text) for emphasis on key headings.
+- **Animated hero**: Added `.hero-gradient` (multi-stop emerald/gold/background with 12s shimmer animation), `.animate-slow-spin` / `.animate-slow-spin-reverse` (60s/90s rotating stars), `.animate-float-soft` (4s float).
+- **Home hero upgrade**: Replaced static gradient with animated `hero-gradient`, added two decorative slowly-rotating StarMark elements in the corners (opacity 0.06-0.08), floating animation on the main star, emerald gradient on "Islam24x7" wordmark, added a "99 Names of Allah" ghost button, and changed the greeting to emerald color.
+
+### New features added (4 new views → 15 total views)
+1. **99 Names of Allah (Asma ul Husna)** — `names-view.tsx` + `names.ts` data (all 99 names with Arabic, transliteration, English, meaning). Hero with Arabic title, virtue quote card, search, responsive 2-5 col grid of name cards with favorite hearts, and a detail Dialog showing full meaning. Favorited via `toggleFavorite("name-N")`.
+2. **40 Hadith Nawawi** — `hadith40-view.tsx` + `forty-hadith.ts` data (42 foundational hadiths). Hero with Arabic title, search, favorites-only filter toggle, color-coded grade badges (Sahih/Hasan), Arabic block + StarDivider + English + narrator + reference. Favorited via `toggleFavorite("nawawi-N")`.
+3. **Favorites/Collections** — `favorites-view.tsx`. Aggregates ALL favorited items across every view (ayahs, hadith, 40-hadith, books, duas, 99-names) by resolving each favorite ID prefix. Filter tabs per type with counts, empty states, remove buttons, and "Open" actions that jump to the source view.
+4. **Hijri Calendar** — `calendar-view.tsx`. Today card (Hijri + Gregorian), month grid with prev/next navigation, day cells highlighted for major events (gold) and recommended days (emerald), today highlighted, sidebar with this month's events + upcoming events list. Uses `Intl.DateTimeFormat` with `calendar: 'islamic'` for accurate Hijri dates, and a custom `hijriToGregorian` mapper for the calendar grid.
+
+### Navigation enhancements
+- Added `"names"`, `"favorites"`, `"calendar"`, `"hadith40"` to `ViewId` union type.
+- Updated `ViewRouter` in `page.tsx` to handle all 15 views.
+- Added a **"More" dropdown** in the desktop header nav (using shadcn DropdownMenu) containing the 6 discover views with icons + descriptions.
+- Added the new views to the mobile Sheet menu under a "Discover" section.
+- Expanded the Home quick-access grid from 6 → 11 tiles (added 99 Names, 40 Hadith, Hijri Calendar, Favorites).
+- Updated the footer: Tools column now lists Prayer Times, Tasbeeh Counter, Hijri Calendar, Favorites; added a "Discover" pill row (99 Names, 40 Hadith, AI Assistant, Search, Download).
+
+### Verification results
+- **Lint**: `bun run lint` → 0 errors, 0 warnings (clean).
+- **agent-browser QA**: All 15 views render correctly, no console errors. Tested: Home hero with new gradient + floating star, 99 Names view (hero + grid + detail dialog), 40 Hadith view (list + grade badges), Favorites view (shows 2 favorited names with correct filter counts + disabled empty tabs), Hijri Calendar (month grid + today highlight + events sidebar), More dropdown (all 6 items), theme toggle, mobile bottom nav.
+- **VLM assessment**: 99 Names view rated 8/10 polish ("exceptionally clear Arabic typography, precise grid alignment"). Improved Home hero rated 8/10 ("significantly more impactful... serene spiritual atmosphere"). The "1 Issue" badge the VLM noted is the Next.js dev-tools indicator (browser-only dev artifact, not part of the production app).
+
+## Unresolved issues or risks, and priority recommendations for the next phase
+- **Calendar accuracy**: The Hijri calendar grid uses an approximate day-count heuristic (alternating 29/30) and a `hijriToGregorian` mapper that estimates the Gregorian date of each Hijri day by month-offset arithmetic. For production, integrate a proper Umm al-Qura API or a tabulated Hijri→Gregorian conversion library so the weekday alignment is exact. Today's date (via Intl) is always accurate.
+- **Prayer/Qibla computation**: The prayer times use a simplified solar-position algorithm — adequate for demo but should be replaced with a certified library (e.g. adhan-js) for accurate local times.
+- **Favorites IDs**: The Favorites view resolves favorite IDs by string-prefix matching (`ayah-`, `hadith-`, `nawawi-`, `name-`, `dua-`, else raw book id). If future features add new favorite ID schemes, they must be added to the resolver in `favorites-view.tsx`.
+- **Performance**: 99 Names renders 99 cards + 42 hadith cards on one page. Currently fine, but for very large content sets consider virtualization (e.g. `@tanstack/react-virtual`).
+- **Recommended next priorities**: (1) Integrate a real Hijri calendar API for exact dates. (2) Add a "Quran audio player" feature (per-surah recitation) — high user value. (3) Add reading-goal / streak tracking in the Reader. (4) Improve the AI Assistant to support follow-up questions with citation chips that jump to the cited surah/hadith. (5) Add PWA service worker for offline reading.
