@@ -18,6 +18,7 @@ import {
   Calendar,
   Bookmark,
   Settings,
+  TrendingUp,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
@@ -101,6 +102,13 @@ const quickAccess: {
     desc: "Islamic dates",
     icon: Calendar,
     color: "from-teal-500 to-cyan-700",
+  },
+  {
+    id: "history",
+    label: "Reading History",
+    desc: "Activity heatmap",
+    icon: TrendingUp,
+    color: "from-indigo-500 to-violet-700",
   },
   {
     id: "favorites",

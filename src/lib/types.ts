@@ -15,6 +15,7 @@ export type ViewId =
   | "favorites"
   | "calendar"
   | "bookmarks"
+  | "history"
   | "settings"
   | "download";
 
