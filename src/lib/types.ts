@@ -8,6 +8,7 @@ export type ViewId =
   | "hadith40"
   | "duas"
   | "masnoon"
+  | "awrad"
   | "prayer"
   | "search"
   | "ai"
