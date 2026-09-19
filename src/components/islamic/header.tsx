@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download, Settings, TrendingUp, Scale } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
 import { StarMark } from "./star-mark";
@@ -42,7 +42,10 @@ export function Header() {
   const setView = useAppStore((s) => s.setView);
   const setSearchQuery = useAppStore((s) => s.setSearchQuery);
 
-  useState(() => setMounted(true));
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const navigate = (v: ViewId) => {
     setView(v);
