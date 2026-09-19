@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Flame, BookOpen, Clock, Calendar, TrendingUp, Target } from "lucide-react";
 import { useAppStore } from "@/lib/store";
@@ -9,6 +10,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+
+// Static weekday labels — deterministic, no Date() needed for initial render.
+const STATIC_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
 // Generate last-7-days activity sparkline data.
 function getLast7Days(
@@ -43,17 +47,37 @@ export function ReadingStatsWidget() {
   const dailyGoalAyahs = useAppStore((s) => s.dailyGoalAyahs);
   const setView = useAppStore((s) => s.setView);
 
+  // Compute date-dependent values only on the client to avoid hydration mismatches.
+  // Initial state uses deterministic defaults (empty 7-day chart, zero today's progress).
+  const [last7, setLast7] = useState<
+    { date: string; label: string; value: number; isToday: boolean }[]
+  >(() =>
+    STATIC_LABELS.map((label) => ({
+      date: "",
+      label,
+      value: 0,
+      isToday: false,
+    }))
+  );
+  const [todayProgress, setTodayProgress] = useState(0);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const days = getLast7Days(readingStats);
+    setLast7(days);
+    const ts = readingStats[todayStr()];
+    setTodayProgress(
+      ts ? ts.ayahsRead + ts.chaptersRead * 5 : 0
+    );
+  }, [readingStats]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   const streak = getStreak();
   const totals = getTotalStats();
-  const last7 = getLast7Days(readingStats);
   const maxValue = Math.max(1, ...last7.map((d) => d.value));
   const activeDays = last7.filter((d) => d.value > 0).length;
 
   // Today's goal progress (chapters count as ~5 ayah-equivalents).
-  const todayStat = readingStats[todayStr()];
-  const todayProgress = todayStat
-    ? todayStat.ayahsRead + todayStat.chaptersRead * 5
-    : 0;
   const goalPct = Math.min(100, (todayProgress / Math.max(1, dailyGoalAyahs)) * 100);
   const goalMet = todayProgress >= dailyGoalAyahs;
 

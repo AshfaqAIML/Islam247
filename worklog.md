@@ -709,3 +709,31 @@ Stage Summary:
 - All 99 names of Prophet Muhammad ﷺ are searchable, displayed in a responsive card grid, favoritable (`prophetName-N` IDs integrate with the existing Zustand `favorites` store), and viewable in a rich detail Dialog with the salawat reminder.
 - Design language is fully consistent with the existing `NamesView` (deep emerald + warm gold palette, Islamic star motifs, Arabic typography via `font-arabic`/`font-arabic-display`, framer-motion entrance animations).
 - Lint clean, no build errors. No new routes created; no test files written.
+
+---
+Task ID: FEAT-MASNOON
+Agent: view-masnoon
+Task: Build Masnoon Duas view — prophetic daily duas
+
+Work Log:
+- Read `/home/z/my-project/worklog.md` to understand prior work and architecture decisions.
+- Read reference files: `duas-view.tsx` (the pattern to follow), `masnoon-duas.ts` (data with 10 categories), `store.ts` (duaCounts/incrementDua/resetDua/favorites/toggleFavorite), `types.ts` (ViewId includes "masnoon"), `star-mark.tsx` (StarMark/StarDivider/StarLattice), `share-button.tsx` (ShareButton), `globals.css` (hero-gradient, font-arabic-display, tokens), and `page.tsx` (ViewRouter).
+- Created `/home/z/my-project/src/components/islamic/masnoon-view.tsx`:
+  - `"use client"` component exporting `MasnoonView`.
+  - Used LOCAL `useState<string | null>(null)` for selected category (NOT store's `selectedDuaCategoryId`, since masnoon has its own 10 categories and would clobber the Duas & Azkar view's selection).
+  - Module-scope `categoryIconMap` (home→Home, shirt→Shirt, utensils→Utensils, building→Building, droplet→Droplet, bell→Bell, heart→Heart, cloud-rain→CloudRain, eye→Eye, flame→Flame) plus `categoriesWithIcons` array and `categoryById` Map, mirroring the duas-view pattern to satisfy `react-hooks/static-components` lint rule.
+  - State A (CategoryList): hero header card with `hero-gradient` bg + `StarLattice` overlay, `Star` icon tile, English "Masnoon Duas" title, Arabic "الأدعية المسنونة" via `font-arabic-display`, English subtitle, `StarDivider`, description, gold "Demo content" badge, and a meta row showing category count + total duas count. Responsive grid (1/2/3 cols) of category cards with emerald-gradient icon tiles, Arabic name, English name, dua count, hover lift, decorative StarMark corner.
+  - State B (DuaList): back toolbar ("All categories" button + count badge), emerald category header card (icon + Arabic + English + subtitle), staggered framer-motion list of MasnoonDuaCards, and a bottom `StarDivider` + "Back to all categories" outline button.
+  - MasnoonDuaCard: number badge + title + "Recite N×" badge on top-left; favorite heart (keyed by `masnoon-${dua.id}`) + ShareButton grouped top-right; highlighted Arabic block (emerald-soft→gold-soft gradient, `font-arabic`, large, right-aligned, `leading-loose`); italic transliteration; translation; reference row with `BookOpen` icon in gold; optional virtue box (gold-tinted, Sparkles icon); counter with SVG progress ring (radius 38) + tappable emerald-gradient increment button (turns gold + Check on completion), `current / target` display, remaining/completion message, `Progress` bar, and reset button — all wired to `duaCounts`/`incrementDua`/`resetDua` from the store using the raw dua id.
+  - framer-motion `containerVariants`/`itemVariants` for staggered entrance. `useEffect` smooth-scrolls to top on selection change.
+  - Used `cn` from `@/lib/utils`, lucide-react icons, shadcn `Card`/`Button`/`Badge`/`Progress`. Mobile-first responsive.
+- Updated `/home/z/my-project/src/app/page.tsx`:
+  - Added `import { MasnoonView } from "@/components/islamic/masnoon-view";` next to the DuasView import.
+  - Added `case "masnoon": return <MasnoonView />;` to the `ViewRouter` switch (between "duas" and "prayer").
+- Ran `bun run lint` — clean (no errors, no warnings).
+- Reviewed `dev.log` — the only runtime errors present are pre-existing ones in `home-view.tsx` (dailyHadith.collection / dailyDua.category null derefs on initial mount), unrelated to this task. After compile the latest GET / 200 responses indicate the app is serving successfully.
+
+Stage Summary:
+- `MasnoonView` is implemented and registered in the ViewRouter; navigating to the "masnoon" view renders the category grid (10 categories, 17 duas total) and drilling into a category shows the dua cards with full Arabic/transliteration/translation/reference/virtue, favorite toggle (namespaced `masnoon-`), share menu, and an interactive counter wired to the persisted Zustand store.
+- Lint passes cleanly. The module-scope icon resolution follows the same pattern as `duas-view.tsx`, keeping the `react-hooks/static-components` rule satisfied.
+- No test files written. No changes to store, types, or data files.

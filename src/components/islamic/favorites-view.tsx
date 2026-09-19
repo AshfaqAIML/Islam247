@@ -20,6 +20,7 @@ import { hadithCollections } from "@/lib/data/hadith";
 import { fortyHadith } from "@/lib/data/forty-hadith";
 import { libraryBooks, getBookById } from "@/lib/data/books";
 import { duaCategories } from "@/lib/data/duas";
+import { masnoonCategories } from "@/lib/data/masnoon-duas";
 import { namesOfAllah } from "@/lib/data/names";
 import { namesOfProphet } from "@/lib/data/prophet-names";
 import { getFatwaById } from "@/lib/data/fatawa";
@@ -237,6 +238,29 @@ export function FavoritesView() {
                 selectDuaCategory(cat.id);
                 navigate("duas");
               },
+            });
+            break;
+          }
+        }
+        continue;
+      }
+      // masnoon-${duaId}
+      if (favId.startsWith("masnoon-")) {
+        const duaId = favId.slice(8);
+        for (const cat of masnoonCategories) {
+          const d = cat.duas.find((x) => x.id === duaId);
+          if (d) {
+            out.push({
+              id: favId,
+              type: "dua",
+              title: d.title,
+              subtitle: `Masnoon · ${cat.name}`,
+              excerpt:
+                d.translation.slice(0, 140) +
+                (d.translation.length > 140 ? "…" : ""),
+              reference: d.reference,
+              arabic: d.arabic,
+              action: () => navigate("masnoon"),
             });
             break;
           }

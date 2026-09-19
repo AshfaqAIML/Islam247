@@ -72,6 +72,13 @@ const quickAccess: {
     color: "from-green-500 to-green-700",
   },
   {
+    id: "masnoon",
+    label: "Masnoon Duas",
+    desc: "Daily prophetic duas",
+    icon: Hand,
+    color: "from-indigo-600 to-blue-800",
+  },
+  {
     id: "prayer",
     label: "Prayer Times",
     desc: "Daily schedule",

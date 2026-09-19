@@ -20,6 +20,7 @@ import { quranData } from "@/lib/data/quran";
 import { hadithCollections } from "@/lib/data/hadith";
 import { libraryBooks } from "@/lib/data/books";
 import { duaCategories } from "@/lib/data/duas";
+import { masnoonCategories } from "@/lib/data/masnoon-duas";
 import { fatawaData } from "@/lib/data/fatawa";
 import { StarMark, StarDivider } from "./star-mark";
 import { VoiceSearchButton } from "./voice-search-button";
@@ -242,6 +243,30 @@ export function SearchView() {
                 selectDuaCategory(cat.id);
                 navigate("duas");
               },
+            });
+          }
+        }
+      }
+      // Masnoon duas
+      for (const cat of masnoonCategories) {
+        for (const d of cat.duas) {
+          if (
+            d.title.toLowerCase().includes(q) ||
+            d.translation.toLowerCase().includes(q) ||
+            d.transliteration.toLowerCase().includes(q) ||
+            d.arabic.includes(localQuery.trim()) ||
+            cat.name.toLowerCase().includes(q)
+          ) {
+            out.push({
+              type: "duas",
+              title: d.title,
+              subtitle: `Masnoon · ${cat.name}`,
+              excerpt:
+                d.translation.slice(0, 160) +
+                (d.translation.length > 160 ? "..." : ""),
+              reference: d.reference,
+              arabic: d.arabic,
+              action: () => navigate("masnoon"),
             });
           }
         }

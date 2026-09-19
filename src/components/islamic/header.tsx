@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download, Settings, TrendingUp, Scale } from "lucide-react";
+import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download, Settings, TrendingUp, Scale, Hand } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
@@ -114,6 +114,7 @@ export function Header() {
               view === "prophetNames" ||
               view === "hadith40" ||
               view === "fatawa" ||
+              view === "masnoon" ||
               view === "calendar" ||
               view === "favorites" ||
               view === "bookmarks" ||
@@ -213,6 +214,7 @@ export function Header() {
                 { id: "prophetNames" as ViewId, label: "99 Names of the Prophet ﷺ" },
                 { id: "hadith40" as ViewId, label: "40 Hadith Nawawi" },
                 { id: "fatawa" as ViewId, label: "Fatawa" },
+                { id: "masnoon" as ViewId, label: "Masnoon Duas" },
                 { id: "calendar" as ViewId, label: "Hijri Calendar" },
                 { id: "history" as ViewId, label: "Reading History" },
                 { id: "favorites" as ViewId, label: "Favorites" },
@@ -252,6 +254,7 @@ const moreItems: {
   { id: "prophetNames", label: "99 Names of the Prophet ﷺ", desc: "Asma un Nabi", icon: Star },
   { id: "hadith40", label: "40 Hadith Nawawi", desc: "Foundational hadiths", icon: ScrollText },
   { id: "fatawa", label: "Fatawa", desc: "Islamic rulings", icon: Scale },
+  { id: "masnoon", label: "Masnoon Duas", desc: "Daily prophetic duas", icon: Hand },
   { id: "calendar", label: "Hijri Calendar", desc: "Islamic dates & events", icon: Calendar },
   { id: "history", label: "Reading History", desc: "Activity heatmap", icon: TrendingUp },
   { id: "favorites", label: "Favorites", desc: "Your saved items", icon: Bookmark },
