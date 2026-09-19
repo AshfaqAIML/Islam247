@@ -361,3 +361,21 @@ export function getDuaById(id: string): Dua | undefined {
   }
   return undefined;
 }
+
+// Build a flat list of all duas across categories for daily rotation.
+export function getAllDuas(): { dua: Dua; category: DuaCategory }[] {
+  const all: { dua: Dua; category: DuaCategory }[] = [];
+  for (const cat of duaCategories) {
+    for (const d of cat.duas) {
+      all.push({ dua: d, category: cat });
+    }
+  }
+  return all;
+}
+
+// Returns a dua of the day based on the current date.
+export function getDailyDua(): { dua: Dua; category: DuaCategory } {
+  const all = getAllDuas();
+  const day = new Date().getDate();
+  return all[day % all.length];
+}

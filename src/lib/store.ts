@@ -88,6 +88,9 @@ interface AppState {
   // Search
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  recentSearches: string[];
+  addRecentSearch: (q: string) => void;
+  clearRecentSearches: () => void;
 }
 
 function todayStr() {
@@ -275,6 +278,17 @@ export const useAppStore = create<AppState>()(
 
       searchQuery: "",
       setSearchQuery: (q) => set({ searchQuery: q }),
+      recentSearches: [],
+      addRecentSearch: (q) =>
+        set((s) => {
+          const trimmed = q.trim();
+          if (!trimmed) return s;
+          const filtered = s.recentSearches.filter(
+            (x) => x.toLowerCase() !== trimmed.toLowerCase()
+          );
+          return { recentSearches: [trimmed, ...filtered].slice(0, 10) };
+        }),
+      clearRecentSearches: () => set({ recentSearches: [] }),
     }),
     {
       name: "islam24x7-store",
@@ -293,6 +307,7 @@ export const useAppStore = create<AppState>()(
         readerTheme: s.readerTheme,
         readerLineSpacing: s.readerLineSpacing,
         readerFontFamily: s.readerFontFamily,
+        recentSearches: s.recentSearches,
       }),
     }
   )

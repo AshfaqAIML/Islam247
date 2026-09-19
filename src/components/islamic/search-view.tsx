@@ -10,6 +10,9 @@ import {
   Sparkles,
   SearchX,
   Hash,
+  Scale,
+  Clock,
+  X,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
@@ -17,6 +20,7 @@ import { quranData } from "@/lib/data/quran";
 import { hadithCollections } from "@/lib/data/hadith";
 import { libraryBooks } from "@/lib/data/books";
 import { duaCategories } from "@/lib/data/duas";
+import { fatawaData } from "@/lib/data/fatawa";
 import { StarMark, StarDivider } from "./star-mark";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,10 +28,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-type Scope = "all" | "quran" | "hadith" | "books" | "duas";
+type Scope = "all" | "quran" | "hadith" | "fatawa" | "books" | "duas";
 
 interface SearchResult {
-  type: "quran" | "hadith" | "books" | "duas";
+  type: "quran" | "hadith" | "fatawa" | "books" | "duas";
   title: string;
   subtitle: string;
   excerpt: string;
@@ -44,6 +48,9 @@ export function SearchView() {
   const selectHadithCollection = useAppStore((s) => s.selectHadithCollection);
   const selectBook = useAppStore((s) => s.selectBook);
   const selectDuaCategory = useAppStore((s) => s.selectDuaCategory);
+  const recentSearches = useAppStore((s) => s.recentSearches);
+  const addRecentSearch = useAppStore((s) => s.addRecentSearch);
+  const clearRecentSearches = useAppStore((s) => s.clearRecentSearches);
 
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [scope, setScope] = useState<Scope>("all");
@@ -240,6 +247,29 @@ export function SearchView() {
       }
     }
 
+    // Fatawa
+    if (scope === "all" || scope === "fatawa") {
+      for (const f of fatawaData) {
+        if (
+          f.question.toLowerCase().includes(q) ||
+          f.answer.toLowerCase().includes(q) ||
+          f.scholar.toLowerCase().includes(q) ||
+          f.topic.toLowerCase().includes(q) ||
+          f.category.toLowerCase().includes(q)
+        ) {
+          out.push({
+            type: "fatawa",
+            title: f.topic,
+            subtitle: `${f.scholar} · ${f.category}`,
+            excerpt:
+              f.answer.slice(0, 160) + (f.answer.length > 160 ? "..." : ""),
+            reference: `${f.source} · ${f.reference}`,
+            action: () => navigate("fatawa"),
+          });
+        }
+      }
+    }
+
     return out.slice(0, 60);
   }, [localQuery, scope, selectBook, selectDuaCategory, selectHadithCollection, selectSurah]);
 
@@ -247,6 +277,7 @@ export function SearchView() {
     return {
       quran: results.filter((r) => r.type === "quran").length,
       hadith: results.filter((r) => r.type === "hadith").length,
+      fatawa: results.filter((r) => r.type === "fatawa").length,
       books: results.filter((r) => r.type === "books").length,
       duas: results.filter((r) => r.type === "duas").length,
     };
@@ -255,11 +286,15 @@ export function SearchView() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(localQuery);
+    if (localQuery.trim()) {
+      addRecentSearch(localQuery.trim());
+    }
   };
 
   const typeIcon = {
     quran: BookOpen,
     hadith: Library,
+    fatawa: Scale,
     books: Library,
     duas: Hand,
   };
@@ -267,6 +302,7 @@ export function SearchView() {
   const typeColor = {
     quran: "bg-emerald-soft text-emerald",
     hadith: "bg-gold-soft text-accent-foreground",
+    fatawa: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
     books: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
     duas: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
   };
@@ -304,6 +340,7 @@ export function SearchView() {
           { id: "all" as Scope, label: "All", count: results.length },
           { id: "quran" as Scope, label: "Quran", count: counts.quran },
           { id: "hadith" as Scope, label: "Hadith", count: counts.hadith },
+          { id: "fatawa" as Scope, label: "Fatawa", count: counts.fatawa },
           { id: "books" as Scope, label: "Books", count: counts.books },
           { id: "duas" as Scope, label: "Duas", count: counts.duas },
         ].map((tab) => (
@@ -332,15 +369,67 @@ export function SearchView() {
 
       {/* Results */}
       {!localQuery.trim() ? (
-        <Card className="flex flex-col items-center gap-3 border-dashed border-border/60 bg-muted/20 p-12 text-center">
-          <SearchIcon className="h-12 w-12 text-muted-foreground/40" />
-          <div>
-            <p className="font-medium text-foreground">Start searching</p>
-            <p className="text-sm text-muted-foreground">
-              Enter a keyword to search across all Islamic content.
-            </p>
-          </div>
-        </Card>
+        <div className="space-y-4">
+          {/* Recent searches */}
+          {recentSearches.length > 0 && (
+            <Card className="border-border/60 bg-card p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  Recent searches
+                </h3>
+                <button
+                  onClick={clearRecentSearches}
+                  className="text-xs text-muted-foreground transition-colors hover:text-destructive"
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {recentSearches.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setLocalQuery(s);
+                      setSearchQuery(s);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs text-foreground transition-colors hover:border-emerald/30 hover:bg-emerald-soft/40"
+                  >
+                    <SearchIcon className="h-3 w-3 text-muted-foreground" />
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Empty state */}
+          <Card className="flex flex-col items-center gap-3 border-dashed border-border/60 bg-muted/20 p-12 text-center">
+            <SearchIcon className="h-12 w-12 text-muted-foreground/40" />
+            <div>
+              <p className="font-medium text-foreground">Start searching</p>
+              <p className="text-sm text-muted-foreground">
+                Search across Quran, Hadith, Fatawa, Books, and Duas.
+              </p>
+            </div>
+            {/* Suggested searches */}
+            <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+              {["Tawhid", "prayer", "Ramadan", "charity", "patience"].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setLocalQuery(s);
+                    setSearchQuery(s);
+                    addRecentSearch(s);
+                  }}
+                  className="rounded-full bg-emerald-soft/50 px-3 py-1 text-xs font-medium text-emerald transition-colors hover:bg-emerald-soft"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </Card>
+        </div>
       ) : results.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 border-dashed border-border/60 bg-muted/20 p-12 text-center">
           <SearchX className="h-12 w-12 text-muted-foreground/40" />

@@ -579,3 +579,54 @@ The Islam24x7 platform had 17 views (after CRON-4 added Share, Bookmark colors, 
 - **Library category structure**: The build order (Rev 4.0 §15.2) recommends expanding library categories to include Quran, Tafseer, Hadith, Fatawa, Fiqh, Aqeedah, Seerah, History, Ethics, Duas, Education, Other. Currently the library has 5 categories (Fiqh, Tafsir, Aqeedah, Seerah, History). Adding the Fatawa books to the library and cross-linking would improve discoverability.
 - **Search scope**: The global Search view currently searches Quran/Hadith/Books/Duas. Adding Fatawa to the search scope would make fatawa discoverable from the unified search.
 - **Recommended next priorities**: (1) Add Fatawa to the global Search view scope. (2) Expand tafseer coverage to more ayahs. (3) Add a "Quran by Juz/Para" navigation option (Rev 4.0 §10.2). (4) Add search history + recent searches (Rev 4.0 §8.6). (5) Add voice search architecture (Rev 4.0 §22).
+
+---
+Task ID: CRON-6
+Agent: cron-review-agent
+Task: Rev 4.0 build order — Search upgrade (Fatawa scope + recent searches), Dua of the Day, Favorites fatawa resolver
+
+## Current project status description/assessment
+The Islam24x7 platform had 19 views (after CRON-5 added Fatawa, Tafseer, Daily Hadith, and Reading History), all functional and lint-clean. This round focused on the Rev 4.0 build order gaps identified in the previous worklog's recommendations: (1) adding Fatawa to the global Search scope (§8.2), (2) search history with recent searches (§8.6), (3) Fatawa in the Favorites resolver, and (4) Dua of the Day on Home (§29.1). QA confirmed the platform was stable before development.
+
+## Current goals/completed modifications/verification results
+
+### 1. Fatawa added to Global Search (Rev 4.0 §8.2)
+- Updated `src/components/islamic/search-view.tsx`:
+  - Added `fatawa` to the `Scope` type and `SearchResult.type` union
+  - Imported `fatawaData` and added a Fatawa search block that matches on question, answer, scholar, topic, and category
+  - Added a "Fatawa" scope tab with count badge
+  - Added fatawa to the `typeIcon` map (Scale icon) and `typeColor` map (violet)
+  - Search results show the fatwa topic, scholar + category, answer excerpt, and source + reference
+- **Verified live**: Searched "prayer" → 7 results total → clicked Fatawa scope → showed 1 result: "Clothing with Images" by Shaykh Ibn Baz with source "Majmu Fatawa Ibn Baz · Vol. 10, p. 256"
+
+### 2. Search History with Recent Searches (Rev 4.0 §8.6)
+- **Store**: Added `recentSearches: string[]`, `addRecentSearch(q)`, `clearRecentSearches()` to `store.ts` — persisted via partialize. Keeps max 10 recent searches, deduplicates case-insensitively, most-recent-first.
+- **Search view**: Added a "Recent searches" card (with Clock icon + Clear button) that appears when the search input is empty and there are recent searches. Each recent search is a clickable pill that re-runs the search. Also added 5 suggested searches (Tawhid, prayer, Ramadan, charity, patience) as clickable pills in the empty state.
+- The `handleSearch` form submit now calls `addRecentSearch(localQuery.trim())`.
+- **Verified live**: Recent searches section + suggested searches appear in the empty state.
+
+### 3. Fatawa in Favorites Resolver
+- Updated `src/components/islamic/favorites-view.tsx`:
+  - Added `fatawa` to the `FavType` union and `typeMeta` map (violet color)
+  - Added a `fatwa-` prefix resolver that looks up the fatwa via `getFatwaById` and builds a FavItem with topic, scholar+category, answer excerpt, and source+reference
+  - Added a "Fatawa" filter tab with count
+  - Imported `getFatwaById` from the fatawa data module
+- Fatawa favorited via the Fatawa view's heart button (keyed `fatwa-${id}`) now appear in the Favorites view and can be filtered/opened.
+
+### 4. Dua of the Day on Home (Rev 4.0 §29.1)
+- **Data**: Added `getAllDuas()` and `getDailyDua()` helpers to `duas.ts` — builds a flat list of all duas and returns one based on the day of the month.
+- **Home view**: Added a "Dua of the Day" card below the Ayah+Hadith grid. Features: emerald-soft badge with Hand icon, category name, Arabic dua text (font-arabic), transliteration (italic), translation, reference with gold dot, decorative StarMark watermark, gold/emerald gradient background.
+- The Home now has 3 daily content cards: Ayah of the Day + Hadith of the Day (side by side) + Dua of the Day (full width below).
+- **Verified live**: "Dua of the Day" card renders on Home with Arabic, transliteration, translation, and reference.
+
+### Verification results
+- **Lint**: `bun run lint` → 0 errors, 0 warnings (clean) throughout all changes.
+- **agent-browser QA**: All features tested working — Fatawa search scope (searched "prayer", found 1 fatawa result with full source attribution), recent searches section + suggested searches in empty state, Dua of the Day card on Home. No console errors.
+- **Dev log**: Clean compiles, GET / 200 responses, no runtime errors.
+
+## Unresolved issues or risks, and priority recommendations for the next phase
+- **Quran Juz navigation**: Not yet implemented (Rev 4.0 §10.2). The Quran view currently only supports surah-based navigation. Adding Juz/Para navigation would require mapping ayahs to juz boundaries.
+- **Tafseer coverage**: Still only 12 ayahs have tafseer. Expanding to more ayahs would improve the Tafseer feature.
+- **Advanced search filters**: The search has scope tabs but no advanced filters (author, language, date) per Rev 4.0 §9.
+- **Voice search**: Not yet implemented (Rev 4.0 §22).
+- **Recommended next priorities**: (1) Add Quran Juz/Para navigation. (2) Expand tafseer coverage to more ayahs. (3) Add advanced search filters (author, category, language). (4) Add voice search via Web Speech API. (5) Add a "Quran by page" navigation mode.

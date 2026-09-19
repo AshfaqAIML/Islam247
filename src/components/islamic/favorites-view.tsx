@@ -21,13 +21,14 @@ import { fortyHadith } from "@/lib/data/forty-hadith";
 import { libraryBooks, getBookById } from "@/lib/data/books";
 import { duaCategories } from "@/lib/data/duas";
 import { namesOfAllah } from "@/lib/data/names";
+import { getFatwaById } from "@/lib/data/fatawa";
 import { StarMark, StarDivider } from "./star-mark";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type FavType = "quran" | "hadith" | "hadith40" | "book" | "dua" | "name";
+type FavType = "quran" | "hadith" | "hadith40" | "fatawa" | "book" | "dua" | "name";
 
 interface FavItem {
   id: string;
@@ -58,6 +59,11 @@ const typeMeta: Record<
     label: "40 Hadith",
     icon: Library,
     color: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
+  },
+  fatawa: {
+    label: "Fatawa",
+    icon: Library,
+    color: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
   },
   book: {
     label: "Library",
@@ -213,6 +219,23 @@ export function FavoritesView() {
         }
         continue;
       }
+      // fatwa-${fatwaId}
+      if (favId.startsWith("fatwa-")) {
+        const f = getFatwaById(favId);
+        if (f) {
+          out.push({
+            id: favId,
+            type: "fatawa",
+            title: f.topic,
+            subtitle: `${f.scholar} · ${f.category}`,
+            excerpt:
+              f.answer.slice(0, 140) + (f.answer.length > 140 ? "…" : ""),
+            reference: `${f.source} · ${f.reference}`,
+            action: () => navigate("fatawa"),
+          });
+        }
+        continue;
+      }
       // otherwise — a book id (raw, e.g. "fiqh-1")
       const book = getBookById(favId);
       if (book) {
@@ -247,6 +270,7 @@ export function FavoritesView() {
     { id: "quran", label: "Quran", count: counts.quran || 0 },
     { id: "hadith", label: "Hadith", count: counts.hadith || 0 },
     { id: "hadith40", label: "40 Hadith", count: counts.hadith40 || 0 },
+    { id: "fatawa", label: "Fatawa", count: counts.fatawa || 0 },
     { id: "book", label: "Books", count: counts.book || 0 },
     { id: "dua", label: "Duas", count: counts.dua || 0 },
     { id: "name", label: "Names", count: counts.name || 0 },

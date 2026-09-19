@@ -26,6 +26,7 @@ import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
 import { getDailyAyah } from "@/lib/data/quran";
 import { getDailyHadith } from "@/lib/data/hadith";
+import { getDailyDua } from "@/lib/data/duas";
 import { getBookById } from "@/lib/data/books";
 import { StarMark, StarDivider } from "./star-mark";
 import { ReadingStatsWidget } from "./reading-stats-widget";
@@ -161,6 +162,7 @@ export function HomeView() {
   }, []);
   const dailyAyah = getDailyAyah();
   const dailyHadith = getDailyHadith();
+  const dailyDua = getDailyDua();
 
   const continueReading = Object.values(readingProgress).sort(
     (a, b) => b.lastRead - a.lastRead
@@ -320,6 +322,49 @@ export function HomeView() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Dua of the Day */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="mt-4"
+      >
+        <Card className="relative overflow-hidden border-gold/20 bg-gradient-to-br from-gold-soft/20 via-card to-emerald-soft/20 p-5 sm:p-6">
+          <div className="absolute right-0 bottom-0 h-28 w-28 translate-x-10 translate-y-10 opacity-[0.05]">
+            <StarMark className="h-full w-full" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <Badge
+                  variant="secondary"
+                  className="bg-emerald-soft text-emerald"
+                >
+                  <Hand className="mr-1 h-3 w-3" />
+                  Dua of the Day
+                </Badge>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {dailyDua.category.name}
+                </span>
+              </div>
+              <p className="mt-3 text-right font-arabic text-xl leading-loose text-foreground sm:text-2xl">
+                {dailyDua.dua.arabic}
+              </p>
+              <p className="mt-2 text-sm italic text-muted-foreground">
+                {dailyDua.dua.transliteration}
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-foreground">
+                &ldquo;{dailyDua.dua.translation}&rdquo;
+              </p>
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-gold">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
+                {dailyDua.dua.reference}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
 
       {/* Quick Access Grid */}
       <motion.section
