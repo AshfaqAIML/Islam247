@@ -16,6 +16,7 @@ import { useAppStore } from "@/lib/store";
 import { hadithCollections } from "@/lib/data/hadith";
 import type { Hadith, HadithCollection } from "@/lib/types";
 import { StarMark, StarDivider } from "./star-mark";
+import { ShareButton } from "./share-button";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -301,6 +302,7 @@ function HadithList({ collection }: { collection: HadithCollection }) {
             >
               <HadithCard
                 hadith={hadith}
+                collectionName={collection.name}
                 favorited={isFav}
                 onToggleFavorite={() => toggleFavorite(favId)}
               />
@@ -327,37 +329,52 @@ function HadithList({ collection }: { collection: HadithCollection }) {
 
 function HadithCard({
   hadith,
+  collectionName,
   favorited,
   onToggleFavorite,
 }: {
   hadith: Hadith;
+  collectionName: string;
   favorited: boolean;
   onToggleFavorite: () => void;
 }) {
   return (
     <Card className="group relative overflow-hidden rounded-2xl border-border/60 bg-card p-4 transition-all hover:border-emerald/30 hover:shadow-md sm:p-6">
-      {/* Favorite button */}
-      <button
-        type="button"
-        onClick={onToggleFavorite}
-        aria-label={
-          favorited ? "Remove hadith from favorites" : "Add hadith to favorites"
-        }
-        aria-pressed={favorited}
-        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/60 backdrop-blur transition-all hover:scale-110 hover:bg-background"
-      >
-        <Heart
-          className={cn(
-            "h-4 w-4 transition-colors",
-            favorited
-              ? "fill-gold text-gold"
-              : "text-muted-foreground/60 group-hover:text-foreground"
-          )}
+      {/* Action buttons: favorite + share */}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onToggleFavorite}
+          aria-label={
+            favorited ? "Remove hadith from favorites" : "Add hadith to favorites"
+          }
+          aria-pressed={favorited}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-background/60 backdrop-blur transition-all hover:scale-110 hover:bg-background"
+        >
+          <Heart
+            className={cn(
+              "h-4 w-4 transition-colors",
+              favorited
+                ? "fill-gold text-gold"
+                : "text-muted-foreground/60 group-hover:text-foreground"
+            )}
+          />
+        </button>
+        <ShareButton
+          data={{
+            title: `${collectionName} #${hadith.number}`,
+            text: hadith.english,
+            arabic: hadith.arabic,
+            reference: `${collectionName} — ${hadith.book || ""} ${hadith.chapter || ""}`.trim(),
+          }}
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full bg-background/60 backdrop-blur text-muted-foreground/60 hover:bg-background hover:text-foreground"
         />
-      </button>
+      </div>
 
       {/* Top row: number + grade */}
-      <div className="mb-3 flex items-center gap-3 pr-10">
+      <div className="mb-3 flex items-center gap-3 pr-20">
         {/* Hadith number badge — emerald circle */}
         <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald to-emerald/70 opacity-95 shadow-sm" />

@@ -18,6 +18,7 @@ import { useAppStore } from "@/lib/store";
 import { quranData } from "@/lib/data/quran";
 import type { Ayah, Surah } from "@/lib/types";
 import { StarMark, StarDivider } from "./star-mark";
+import { ShareButton } from "./share-button";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -406,6 +407,7 @@ function SurahReading({ surah }: { surah: Surah }) {
               <AyahRow
                 ayah={ayah}
                 surahId={surah.id}
+                surahName={surah.name}
                 favorited={isFav}
                 onToggleFavorite={() => toggleFavorite(favId)}
               />
@@ -433,11 +435,13 @@ function SurahReading({ surah }: { surah: Surah }) {
 function AyahRow({
   ayah,
   surahId,
+  surahName,
   favorited,
   onToggleFavorite,
 }: {
   ayah: Ayah;
   surahId: number;
+  surahName: string;
   favorited: boolean;
   onToggleFavorite: () => void;
 }) {
@@ -447,25 +451,38 @@ function AyahRow({
 
   return (
     <Card className="group card-refined relative rounded-2xl border-border/60 bg-card p-4 transition-all hover:border-emerald/30 sm:p-5">
-      {/* Favorite button */}
-      <button
-        type="button"
-        onClick={onToggleFavorite}
-        aria-label={favorited ? "Remove ayah from favorites" : "Add ayah to favorites"}
-        aria-pressed={favorited}
-        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/60 backdrop-blur transition-all hover:scale-110 hover:bg-background"
-      >
-        <Heart
-          className={cn(
-            "h-4 w-4 transition-colors",
-            favorited
-              ? "fill-gold text-gold"
-              : "text-muted-foreground/60 group-hover:text-foreground"
-          )}
+      {/* Action buttons: favorite + share */}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onToggleFavorite}
+          aria-label={favorited ? "Remove ayah from favorites" : "Add ayah to favorites"}
+          aria-pressed={favorited}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-background/60 backdrop-blur transition-all hover:scale-110 hover:bg-background"
+        >
+          <Heart
+            className={cn(
+              "h-4 w-4 transition-colors",
+              favorited
+                ? "fill-gold text-gold"
+                : "text-muted-foreground/60 group-hover:text-foreground"
+            )}
+          />
+        </button>
+        <ShareButton
+          data={{
+            title: `Surah ${surahName} — Ayah ${ayah.number}`,
+            text: ayah.translation,
+            arabic: ayah.arabic,
+            reference: `Quran — Surah ${surahName} (${surahId}:${ayah.number})`,
+          }}
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full bg-background/60 backdrop-blur text-muted-foreground/60 hover:bg-background hover:text-foreground"
         />
-      </button>
+      </div>
 
-      <div className="flex items-start gap-3 pr-10">
+      <div className="flex items-start gap-3 pr-20">
         {/* Octagonal ayah number medallion */}
         <div className="relative flex h-11 w-11 shrink-0 items-center justify-center">
           <svg viewBox="0 0 44 44" className="absolute inset-0 h-full w-full">

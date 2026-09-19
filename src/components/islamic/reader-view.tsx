@@ -279,16 +279,27 @@ function ReaderContent({ book }: { book: Book }) {
                       index={i}
                       theme={readerTheme}
                       bookmark={bm}
-                      onToggleBookmark={() => {
+                      onToggleBookmark={(color) => {
                         if (bm) {
-                          removeBookmark(bmId);
-                        } else {
+                          if (color && color !== bm.color) {
+                            // Change color by re-adding (addBookmark updates existing)
+                            addBookmark({
+                              bookId: book.id,
+                              chapterIndex,
+                              paragraphIndex: i,
+                              excerpt: p.slice(0, 120) + (p.length > 120 ? "…" : ""),
+                              color,
+                            });
+                          } else if (!color) {
+                            removeBookmark(bmId);
+                          }
+                        } else if (color) {
                           addBookmark({
                             bookId: book.id,
                             chapterIndex,
                             paragraphIndex: i,
                             excerpt: p.slice(0, 120) + (p.length > 120 ? "…" : ""),
-                            color: "emerald",
+                            color,
                           });
                         }
                       }}
@@ -542,7 +553,7 @@ interface ParagraphBlockProps {
   index: number;
   theme: ReaderTheme;
   bookmark?: import("@/lib/types").Bookmark;
-  onToggleBookmark: () => void;
+  onToggleBookmark: (color?: "emerald" | "gold" | "rose") => void;
   onOpenNote: () => void;
   isActiveNote: boolean;
   note?: string;
@@ -562,6 +573,7 @@ function ParagraphBlock({
   onNoteChange,
   onCloseNote,
 }: ParagraphBlockProps) {
+  const [showColors, setShowColors] = useState(false);
   const textColor =
     theme === "dark"
       ? "text-zinc-200"
@@ -589,7 +601,7 @@ function ParagraphBlock({
     >
       <p className={cn("text-justify", textColor)}>{text}</p>
 
-      {/* Bookmark toggle — appears on hover or when bookmarked */}
+      {/* Bookmark toggle + color picker — appears on hover or when bookmarked */}
       <div
         className={cn(
           "absolute -right-1 top-1 flex flex-col gap-1 transition-opacity",
@@ -599,7 +611,13 @@ function ParagraphBlock({
         )}
       >
         <button
-          onClick={onToggleBookmark}
+          onClick={() => {
+            if (bookmark) {
+              onToggleBookmark();
+            } else {
+              setShowColors((v) => !v);
+            }
+          }}
           aria-label={bookmark ? "Remove bookmark" : "Add bookmark"}
           className={cn(
             "flex h-7 w-7 items-center justify-center rounded-full shadow-sm backdrop-blur transition-colors",
@@ -614,6 +632,51 @@ function ParagraphBlock({
         >
           <Bookmark className={cn("h-3.5 w-3.5", bookmark && "fill-current")} />
         </button>
+
+        {/* Color picker — shown when not yet bookmarked and toggled */}
+        {!bookmark && showColors && (
+          <div className="flex flex-col gap-1 rounded-full bg-background/95 p-1 shadow-md backdrop-blur">
+            {(["emerald", "gold", "rose"] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => {
+                  onToggleBookmark(c);
+                  setShowColors(false);
+                }}
+                aria-label={`Bookmark as ${c}`}
+                className={cn(
+                  "h-5 w-5 rounded-full border-2 border-background shadow-sm transition-transform hover:scale-110",
+                  c === "emerald" && "bg-emerald",
+                  c === "gold" && "bg-gold",
+                  c === "rose" && "bg-rose-500"
+                )}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Change color — shown when already bookmarked */}
+        {bookmark && (
+          <div className="flex gap-0.5 rounded-full bg-background/95 p-0.5 shadow-sm backdrop-blur">
+            {(["emerald", "gold", "rose"] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => onToggleBookmark(c)}
+                aria-label={`Change to ${c}`}
+                className={cn(
+                  "h-4 w-4 rounded-full border transition-transform hover:scale-110",
+                  bookmark.color === c
+                    ? "border-foreground/40 ring-1 ring-foreground/30"
+                    : "border-background",
+                  c === "emerald" && "bg-emerald",
+                  c === "gold" && "bg-gold",
+                  c === "rose" && "bg-rose-500"
+                )}
+              />
+            ))}
+          </div>
+        )}
+
         {bookmark && (
           <button
             onClick={onOpenNote}

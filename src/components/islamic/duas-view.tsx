@@ -20,6 +20,7 @@ import { useAppStore } from "@/lib/store";
 import { duaCategories } from "@/lib/data/duas";
 import type { Dua, DuaCategory } from "@/lib/types";
 import { StarMark, StarDivider } from "./star-mark";
+import { ShareButton } from "./share-button";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -295,6 +296,17 @@ function DuaCard({ dua, index }: { dua: Dua; index: number }) {
               )}
             />
           </button>
+          <ShareButton
+            data={{
+              title: dua.title,
+              text: dua.translation,
+              arabic: dua.arabic,
+              reference: dua.reference,
+            }}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-full text-muted-foreground hover:bg-emerald-soft/40 hover:text-emerald"
+          />
         </div>
 
         {/* Arabic text — highlighted */}

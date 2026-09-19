@@ -16,6 +16,7 @@ import { useAppStore } from "@/lib/store";
 import { fortyHadith } from "@/lib/data/forty-hadith";
 import type { NawawiHadith } from "@/lib/data/forty-hadith";
 import { StarMark, StarDivider, StarLattice } from "./star-mark";
+import { ShareButton } from "./share-button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -272,25 +273,38 @@ function NawawiCard({
         </div>
       </div>
 
-      {/* Favorite heart button — top right */}
-      <button
-        type="button"
-        onClick={() => toggleFavorite(favId)}
-        aria-label={
-          favorited ? "Remove hadith from favorites" : "Add hadith to favorites"
-        }
-        aria-pressed={favorited}
-        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/60 backdrop-blur transition-all hover:scale-110 hover:bg-background"
-      >
-        <Heart
-          className={cn(
-            "h-4 w-4 transition-colors",
-            favorited
-              ? "fill-gold text-gold"
-              : "text-muted-foreground/60 group-hover:text-foreground"
-          )}
+      {/* Action buttons — top right: favorite + share */}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => toggleFavorite(favId)}
+          aria-label={
+            favorited ? "Remove hadith from favorites" : "Add hadith to favorites"
+          }
+          aria-pressed={favorited}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-background/60 backdrop-blur transition-all hover:scale-110 hover:bg-background"
+        >
+          <Heart
+            className={cn(
+              "h-4 w-4 transition-colors",
+              favorited
+                ? "fill-gold text-gold"
+                : "text-muted-foreground/60 group-hover:text-foreground"
+            )}
+          />
+        </button>
+        <ShareButton
+          data={{
+            title: `40 Hadith Nawawi #${hadith.number}: ${hadith.title}`,
+            text: hadith.english,
+            arabic: hadith.arabic,
+            reference: `${hadith.reference} — Narrated by ${hadith.narrator}`,
+          }}
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full bg-background/60 backdrop-blur text-muted-foreground/60 hover:bg-background hover:text-foreground"
         />
-      </button>
+      </div>
 
       {/* Grade badge */}
       <div className="mt-3">
