@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ViewId, ReadingProgress } from "./types";
+import type { ViewId, ReadingProgress, Bookmark } from "./types";
 
 interface ReadingStat {
   date: string; // YYYY-MM-DD
@@ -54,11 +54,25 @@ interface AppState {
   favorites: string[];
   toggleFavorite: (id: string) => void;
 
+  // Bookmarks & notes (persisted)
+  bookmarks: Bookmark[];
+  addBookmark: (b: Omit<Bookmark, "id" | "createdAt">) => void;
+  updateBookmarkNote: (id: string, note: string) => void;
+  removeBookmark: (id: string) => void;
+
+  // Daily reading goal (persisted)
+  dailyGoalAyahs: number; // target ayah-equivalents per day
+  setDailyGoalAyahs: (n: number) => void;
+
   // Reader settings
   readerFontSize: number;
   readerTheme: "light" | "sepia" | "dark";
+  readerLineSpacing: number; // 1.5 - 2.2
+  readerFontFamily: "sans" | "serif";
   setReaderFontSize: (n: number) => void;
   setReaderTheme: (t: "light" | "sepia" | "dark") => void;
+  setReaderLineSpacing: (n: number) => void;
+  setReaderFontFamily: (f: "sans" | "serif") => void;
 
   // Quran audio player (session state — not persisted)
   audioSurahId: number | null;
@@ -201,10 +215,48 @@ export const useAppStore = create<AppState>()(
             : [...s.favorites, id],
         })),
 
+      bookmarks: [],
+      addBookmark: (b) =>
+        set((s) => {
+          const id = `${b.bookId}-${b.chapterIndex}-${b.paragraphIndex}`;
+          // Avoid duplicates — update if exists.
+          const existing = s.bookmarks.find((x) => x.id === id);
+          if (existing) {
+            return {
+              bookmarks: s.bookmarks.map((x) =>
+                x.id === id ? { ...x, ...b, note: b.note ?? x.note } : x
+              ),
+            };
+          }
+          return {
+            bookmarks: [
+              ...s.bookmarks,
+              { ...b, id, createdAt: Date.now() },
+            ],
+          };
+        }),
+      updateBookmarkNote: (id, note) =>
+        set((s) => ({
+          bookmarks: s.bookmarks.map((x) =>
+            x.id === id ? { ...x, note } : x
+          ),
+        })),
+      removeBookmark: (id) =>
+        set((s) => ({
+          bookmarks: s.bookmarks.filter((x) => x.id !== id),
+        })),
+
+      dailyGoalAyahs: 20,
+      setDailyGoalAyahs: (n) => set({ dailyGoalAyahs: n }),
+
       readerFontSize: 18,
       readerTheme: "light",
+      readerLineSpacing: 1.8,
+      readerFontFamily: "serif",
       setReaderFontSize: (n) => set({ readerFontSize: n }),
       setReaderTheme: (t) => set({ readerTheme: t }),
+      setReaderLineSpacing: (n) => set({ readerLineSpacing: n }),
+      setReaderFontFamily: (f) => set({ readerFontFamily: f }),
 
       audioSurahId: null,
       audioReciter: "ar.alafasy",
@@ -235,8 +287,12 @@ export const useAppStore = create<AppState>()(
         currentDhikr: s.currentDhikr,
         duaCounts: s.duaCounts,
         favorites: s.favorites,
+        bookmarks: s.bookmarks,
+        dailyGoalAyahs: s.dailyGoalAyahs,
         readerFontSize: s.readerFontSize,
         readerTheme: s.readerTheme,
+        readerLineSpacing: s.readerLineSpacing,
+        readerFontFamily: s.readerFontFamily,
       }),
     }
   )

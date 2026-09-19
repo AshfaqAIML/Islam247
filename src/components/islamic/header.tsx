@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download } from "lucide-react";
+import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download, Settings } from "lucide-react";
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
@@ -111,7 +111,9 @@ export function Header() {
               view === "hadith40" ||
               view === "calendar" ||
               view === "favorites" ||
+              view === "bookmarks" ||
               view === "tasbeeh" ||
+              view === "settings" ||
               view === "download"
             }
           />
@@ -205,7 +207,9 @@ export function Header() {
                 { id: "hadith40" as ViewId, label: "40 Hadith Nawawi" },
                 { id: "calendar" as ViewId, label: "Hijri Calendar" },
                 { id: "favorites" as ViewId, label: "Favorites" },
+                { id: "bookmarks" as ViewId, label: "Bookmarks & Notes" },
                 { id: "tasbeeh" as ViewId, label: "Tasbeeh Counter" },
+                { id: "settings" as ViewId, label: "Settings" },
                 { id: "download" as ViewId, label: "Download App" },
               ].map((item) => (
                 <button
@@ -239,7 +243,9 @@ const moreItems: {
   { id: "hadith40", label: "40 Hadith Nawawi", desc: "Foundational hadiths", icon: ScrollText },
   { id: "calendar", label: "Hijri Calendar", desc: "Islamic dates & events", icon: Calendar },
   { id: "favorites", label: "Favorites", desc: "Your saved items", icon: Bookmark },
+  { id: "bookmarks", label: "Bookmarks & Notes", desc: "Highlighted passages", icon: Bookmark },
   { id: "tasbeeh", label: "Tasbeeh Counter", desc: "Dhikr counter", icon: Heart },
+  { id: "settings", label: "Settings", desc: "Reader & goals", icon: Settings },
   { id: "download", label: "Download App", desc: "Android APK", icon: Download },
 ];
 

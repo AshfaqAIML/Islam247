@@ -305,3 +305,93 @@ The Islam24x7 platform had 15 views (Home, Library, Reader, Quran, Hadith, Hadit
 - **AI citation parsing**: The parser relies on the LLM following the `[[CITATIONS]]` / `[[FOLLOWUPS]]` format exactly. If the LLM deviates, citations may be missing — the UI degrades gracefully (no Sources section shown). Could add a fallback regex to extract "Surah X N:M" and "Sahih X #N" patterns from the raw answer.
 - **Citation matching**: `handleCitationClick` matches surahs/collections by name substring. Works for the 8 surahs + 4 collections in our demo data, but won't match surahs not in our dataset (e.g., "Surah Al-Ma'idah" isn't in our 8-surah demo set, so that chip just navigates to the Quran list view). Adding the full 114 surahs would make citation navigation precise.
 - **Recommended next priorities**: (1) Expand the Quran dataset to all 114 surahs (or at least the last 30 short surahs) so audio + citation navigation is complete. (2) Add a "Qibla finder" with device-orientation compass (already in Prayer view, could be enhanced). (3) Add bookmark/note-taking in the Reader. (4) Add a "daily goal" setting (e.g., read N ayahs/day) with progress in the stats widget. (5) PWA service worker for offline reading + cached audio.
+
+---
+Task ID: FEAT-SETTINGS
+Agent: view-settings
+Task: Build Settings view with reader preferences, daily goal, data management
+
+Work Log:
+- Read `src/lib/types.ts`, `src/lib/store.ts`, `src/components/islamic/star-mark.tsx`, `src/components/islamic/home-view.tsx`, `src/components/islamic/reading-stats-widget.tsx`, `src/components/islamic/reader-view.tsx`, and `src/app/globals.css` to align with the established design system (emerald/gold palette, hero-gradient, card-refined, framer-motion entrance, StarMark/StarDivider).
+- Reviewed shadcn/ui Slider, AlertDialog, Card, Button, Badge, Progress components to use the correct APIs (Slider expects `value` as an array + `onValueChange`; AlertDialog composes Trigger/Content/Header/Title/Description/Action/Cancel).
+- Created `/home/z/my-project/src/components/islamic/settings-view.tsx` exporting `SettingsView` with six sections:
+  1. Hero header card — `hero-gradient` background, decorative rotating StarMarks (animate-slow-spin / animate-slow-spin-reverse), centered StarMark, "Settings" gradient title, subtitle "Personalize your reading experience", StarDivider.
+  2. Reader Preferences card — live preview paragraph reflecting current font size/family/spacing/theme applied to the required sample text; font-size Slider (14-24, step 1) + value Badge; font family toggle (Serif/Sans, active = emerald bg); line-spacing Slider (1.5-2.2, step 0.1) + value Badge; reading theme grid (Light/Sepia/Dark with Sun/BookOpen/Moon icons). Preview area background switches with the selected theme using the same theme mapping as reader-view.
+  3. Daily Reading Goal card — explanatory text, 5-option segmented control (10/20/30/50/100), today's progress computed from `readingStats[today]` (ayahsRead + chaptersRead*5 ayah-equivalents) shown via Progress bar + percent Badge, plus mini summary chips for `getStreak()` and `getTotalStats().days`.
+  4. Tasbeeh Settings card — 4-option target selector (33/99/100/1000) + lifetime tasbeeh total via `tasbeehTotal`.
+  5. Data Management card — count chips (favorites, bookmarks, reading days, total chapters read), "Export my data" button generating a JSON Blob + `URL.createObjectURL` download as `islam24x7-data.json` (includes readingProgress, readingStats, favorites, bookmarks, duaCounts, tasbeehTotal, tasbeehTarget, currentDhikr, dailyGoalAyahs, reader settings, lastReadDate), "Reset all data" destructive button wrapped in shadcn AlertDialog confirmation; localStorage key `islam24x7-store` cleared on confirm then `window.location.reload()`. Note explains local-only storage.
+  6. About card — app name, v1.0.0 Badge, brief description, demo-content disclaimer.
+- All sections use framer-motion fade-in-up entrance animations with staggered delays (0, 0.1, 0.15, 0.2, 0.25, 0.3). Mobile-first responsive layout (`max-w-4xl`, grid breakpoints). `cn` from `@/lib/utils` used throughout.
+- Updated `/home/z/my-project/src/app/page.tsx`: imported `SettingsView` from `@/components/islamic/settings-view` and added `case "settings": return <SettingsView />;` to the ViewRouter switch (after `download`).
+- Ran `bun run lint` — passed with zero errors/warnings.
+- Verified dev server log shows successful compilation with no runtime errors related to the new view.
+
+Stage Summary:
+- `SettingsView` is now registered as a navigable view in the single-page app router. It exposes all persisted reader settings, daily-goal tracking, tasbeeh target selection, and a complete data export/reset workflow with confirmation dialog.
+- Reuses the established emerald/gold Islamic design tokens (hero-gradient, text-gradient-emerald, card-refined, StarMark/StarDivider, animate-slow-spin) for visual consistency with the rest of the app.
+- Export payload includes the full persisted state shape required by the task plus a `_meta` block for traceability.
+- Reset action safely removes only the `islam24x7-store` localStorage key (matching the Zustand persist name in `src/lib/store.ts`) and reloads the page to re-initialise default state.
+
+---
+Task ID: CRON-3
+Agent: cron-review-agent
+Task: QA testing + 3 new features (Bookmarks & Notes, Settings view, Daily Reading Goal) + reader typography polish
+
+## Current project status description/assessment
+The Islam24x7 platform had 17 views (after CRON-2 added the audio player, reading stats, and AI citations), all functional and lint-clean. This cron round focused on the next-phase recommendations from the previous worklog: (1) bookmark/note-taking in the Reader, (2) a daily reading goal with progress tracking, and (3) a centralized Settings view. QA confirmed the platform was stable (lint clean, no console errors, audio player and AI citations working) before starting development.
+
+## Current goals/completed modifications/verification results
+
+### 1. Bookmarks & Notes in the Reader (new feature)
+- **Types**: Added `Bookmark` interface to `types.ts` (id, bookId, chapterIndex, paragraphIndex, excerpt, note?, color, createdAt) and `"bookmarks"` / `"settings"` to `ViewId`.
+- **Store**: Added `bookmarks: Bookmark[]`, `addBookmark()` (deduplicates by id, updates note if exists), `updateBookmarkNote()`, `removeBookmark()` to `store.ts`. All persisted via Zustand partialize.
+- **Reader**: Updated `reader-view.tsx` with a new `ParagraphBlock` component that renders each paragraph with:
+  - A hover-reveal bookmark toggle button (emerald when active, with color-coded highlight backgrounds: emerald/gold/rose)
+  - A note toggle button (gold when note exists) that opens an inline `<textarea>` editor for personal reflections
+  - Color-coded paragraph highlighting when bookmarked
+- **Reader typography**: Added `readerLineSpacing` (1.5–2.2) and `readerFontFamily` ("sans"|"serif") settings, applied via inline styles on the reading column. Added toggle buttons in the bottom toolbar (font family Serif/Sans, line spacing cycle 1.6→1.8→2.0).
+- **Verified live**: Opened a book → bookmarked a paragraph (button changed to "Remove bookmark", note button appeared) → opened the note editor → typed a note → all saved correctly.
+
+### 2. Bookmarks View (new feature)
+- Created `src/components/islamic/bookmarks-view.tsx` (`BookmarksView`) — aggregates all bookmarks with book info, sorted by recency. Features:
+  - Header with bookmark count badge + "X with notes" badge
+  - Filter tabs by book (when multiple books have bookmarks)
+  - Each bookmark card: color-coded left border (emerald/gold/rose), book title badge, chapter reference, italic excerpt, highlighted note block (if present), date, "Open" button (jumps to the book), and remove button
+  - Empty state with "Browse Library" CTA
+  - framer-motion staggered entrance + AnimatePresence for removals
+- **Verified live**: After bookmarking a paragraph with a note in the Reader, navigated to the Bookmarks view → saw the bookmark with "Foundations of Islamic Jurisprudence", "Ch 1", the excerpt, "YOUR NOTE: Important principle about the sources of Islamic law.", "Open" button, and "1 with notes" badge.
+
+### 3. Settings View (new feature, built by subagent)
+- Created `src/components/islamic/settings-view.tsx` (`SettingsView`) with 6 sections:
+  1. Hero header with `hero-gradient` + StarMark
+  2. Reader Preferences — live preview paragraph (theme-aware), font-size slider (14-24), line-spacing slider (1.5-2.2), Serif/Sans toggle, Light/Sepia/Dark theme grid
+  3. Daily Reading Goal — segmented control (10/20/30/50/100 ayahs/day), today's progress bar (ayah-equivalents = ayahsRead + chaptersRead*5), streak + total-days mini summary
+  4. Tasbeeh Settings — target selector (33/99/100/1000), lifetime count
+  5. Data Management — count chips (favorites, bookmarks, reading days, chapters), Export JSON button (downloads `islam24x7-data.json` via Blob), Reset button (shadcn AlertDialog confirmation → clears localStorage + reloads)
+  6. About — app name, v1.0.0, demo disclaimer
+- Wired into the ViewRouter in `page.tsx`.
+
+### 4. Daily Reading Goal in Stats Widget (new feature)
+- Updated `reading-stats-widget.tsx` to read `dailyGoalAyahs` from the store and compute today's progress (ayah-equivalents = today's ayahsRead + chaptersRead * 5).
+- Added a "Today's goal" progress card between the 7-day chart and the CTA: target icon, progress bar (gold when goal met, emerald otherwise), "X/Y" count, clickable to navigate to Settings.
+- Shows "Daily goal achieved!" in gold when the goal is met.
+- **Verified live**: After reading a book chapter, the home widget showed "Today's goal 17/20" with a progress bar — the reading was tracked toward the goal.
+
+### Navigation enhancements
+- Added `"bookmarks"` and `"settings"` to `ViewId`.
+- Updated `ViewRouter` in `page.tsx` to handle both new views (17 → 19 total views: Home, Library, Reader, Quran, Hadith, Hadith40, Duas, Prayer, Search, AI, Tasbeeh, Names, Favorites, Calendar, Bookmarks, Settings, Download, plus audio player + reading stats widget as global components).
+- Added both new views to the header "More" dropdown (with icons + descriptions), the mobile Sheet "Discover" section, the footer discover pill row, and the Home quick-access grid (now 13 tiles: added Bookmarks, Settings).
+- Updated the `activeDiscover` check in the header to highlight "More" when on bookmarks/settings views.
+
+### Verification results
+- **Lint**: `bun run lint` → 0 errors, 0 warnings (clean) throughout all changes.
+- **agent-browser QA**: All new features tested working — Settings view (all 6 sections render, serif/sans/font-size/line-spacing/theme controls present), Reader bookmarks (add/remove/bookmark button toggles, note editor opens and saves), Bookmarks view (shows saved bookmark with note, "1 with notes" badge, Open button, filter tabs), daily goal progress on Home ("Today's goal 17/20" with progress bar). No console errors.
+- **VLM assessment**: Reading journey widget rated 8/10.
+- **Dev log**: Clean compiles, GET / 200 responses, no runtime errors.
+
+## Unresolved issues or risks, and priority recommendations for the next phase
+- **Bookmark colors**: Currently all bookmarks use the "emerald" color by default. A color picker (emerald/gold/rose) on the bookmark button could let users categorize highlights — the data model already supports it.
+- **Note sync**: Notes are stored locally only (Zustand + localStorage). No cross-device sync — the Settings → Export feature is the only way to transfer data.
+- **Reader font family**: The "serif" option uses Georgia/Times New Roman (system fonts). Could add a proper Arabic-aware serif font for a more traditional reading experience.
+- **Daily goal accuracy**: The "ayah-equivalents" heuristic (chapters × 5) is approximate. A more precise model would weight by actual chapter length or reading time.
+- **Recommended next priorities**: (1) Add a color picker to bookmarks (emerald/gold/rose categorization). (2) Expand the Quran dataset to all 114 surahs for complete audio + citation navigation. (3) Add a "reading history" timeline view showing all reading activity over time. (4) PWA service worker for offline reading + cached audio. (5) Add share functionality (share ayahs/hadith/duas via native Web Share API).

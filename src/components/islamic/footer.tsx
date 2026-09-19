@@ -87,8 +87,10 @@ export function Footer() {
           {([
             { id: "names" as ViewId, label: "99 Names" },
             { id: "hadith40" as ViewId, label: "40 Hadith" },
+            { id: "bookmarks" as ViewId, label: "Bookmarks" },
             { id: "ai" as ViewId, label: "AI Assistant" },
             { id: "search" as ViewId, label: "Search" },
+            { id: "settings" as ViewId, label: "Settings" },
             { id: "download" as ViewId, label: "Download" },
           ]).map((l) => (
             <button

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
+  Bookmark,
   ChevronLeft,
   ChevronRight,
   Heart,
@@ -13,8 +14,10 @@ import {
   Plus,
   Moon,
   RotateCcw,
+  StickyNote,
   Sun,
   Type,
+  X,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { getBookById } from "@/lib/data/books";
@@ -70,11 +73,20 @@ function ReaderContent({ book }: { book: Book }) {
   const toggleFavorite = useAppStore((s) => s.toggleFavorite);
   const readerFontSize = useAppStore((s) => s.readerFontSize);
   const readerTheme = useAppStore((s) => s.readerTheme);
+  const readerLineSpacing = useAppStore((s) => s.readerLineSpacing);
+  const readerFontFamily = useAppStore((s) => s.readerFontFamily);
   const setReaderFontSize = useAppStore((s) => s.setReaderFontSize);
   const setReaderTheme = useAppStore((s) => s.setReaderTheme);
+  const setReaderLineSpacing = useAppStore((s) => s.setReaderLineSpacing);
+  const setReaderFontFamily = useAppStore((s) => s.setReaderFontFamily);
   const readingProgress = useAppStore((s) => s.readingProgress);
   const updateReadingProgress = useAppStore((s) => s.updateReadingProgress);
   const recordReading = useAppStore((s) => s.recordReading);
+  const bookmarks = useAppStore((s) => s.bookmarks);
+  const addBookmark = useAppStore((s) => s.addBookmark);
+  const removeBookmark = useAppStore((s) => s.removeBookmark);
+  const updateBookmarkNote = useAppStore((s) => s.updateBookmarkNote);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
 
   // Initialize chapter index from persisted progress on mount.
   const [chapterIndex, setChapterIndex] = useState<number>(() => {
@@ -247,27 +259,49 @@ function ReaderContent({ book }: { book: Book }) {
               <StarDivider className="my-6" />
 
               <div
-                className="space-y-5 leading-relaxed"
-                style={{ fontSize: `${readerFontSize}px` }}
+                className="space-y-5"
+                style={{
+                  fontSize: `${readerFontSize}px`,
+                  lineHeight: readerLineSpacing,
+                  fontFamily:
+                    readerFontFamily === "serif"
+                      ? "Georgia, 'Times New Roman', serif"
+                      : "var(--font-geist-sans), system-ui, sans-serif",
+                }}
               >
-                {paragraphs.map((p, i) => (
-                  <motion.p
-                    key={i}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, delay: 0.05 * Math.min(i, 4) }}
-                    className={cn(
-                      "text-justify",
-                      readerTheme === "dark"
-                        ? "text-zinc-200"
-                        : readerTheme === "sepia"
-                          ? "text-stone-700 dark:text-amber-50/90"
-                          : "text-foreground/90"
-                    )}
-                  >
-                    {p}
-                  </motion.p>
-                ))}
+                {paragraphs.map((p, i) => {
+                  const bmId = `${book.id}-${chapterIndex}-${i}`;
+                  const bm = bookmarks.find((b) => b.id === bmId);
+                  return (
+                    <ParagraphBlock
+                      key={i}
+                      text={p}
+                      index={i}
+                      theme={readerTheme}
+                      bookmark={bm}
+                      onToggleBookmark={() => {
+                        if (bm) {
+                          removeBookmark(bmId);
+                        } else {
+                          addBookmark({
+                            bookId: book.id,
+                            chapterIndex,
+                            paragraphIndex: i,
+                            excerpt: p.slice(0, 120) + (p.length > 120 ? "…" : ""),
+                            color: "emerald",
+                          });
+                        }
+                      }}
+                      onOpenNote={() =>
+                        setActiveNoteId(bm ? bmId : null)
+                      }
+                      isActiveNote={activeNoteId === bmId}
+                      note={bm?.note}
+                      onNoteChange={(text) => updateBookmarkNote(bmId, text)}
+                      onCloseNote={() => setActiveNoteId(null)}
+                    />
+                  );
+                })}
               </div>
 
               {/* End-of-chapter navigation */}
@@ -337,6 +371,37 @@ function ReaderContent({ book }: { book: Book }) {
               aria-label="Increase font size"
             >
               <Plus className="h-3.5 w-3.5" />
+            </Button>
+            {/* Font family toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 rounded-full px-2 text-[11px] font-medium"
+              onClick={() =>
+                setReaderFontFamily(readerFontFamily === "serif" ? "sans" : "serif")
+              }
+              aria-label="Toggle font family"
+              title="Toggle font family"
+            >
+              <Type className="h-3 w-3" />
+              <span className="hidden sm:inline">
+                {readerFontFamily === "serif" ? "Serif" : "Sans"}
+              </span>
+            </Button>
+            {/* Line spacing */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 rounded-full px-2 text-[11px] font-medium"
+              onClick={() =>
+                setReaderLineSpacing(
+                  readerLineSpacing >= 2.0 ? 1.6 : readerLineSpacing + 0.2
+                )
+              }
+              aria-label="Adjust line spacing"
+              title="Line spacing"
+            >
+              <span className="tabular-nums">{readerLineSpacing.toFixed(1)}</span>
             </Button>
           </div>
 
@@ -469,5 +534,133 @@ function ReaderEmptyState({ onBrowse }: { onBrowse: () => void }) {
         </Card>
       </motion.div>
     </div>
+  );
+}
+
+interface ParagraphBlockProps {
+  text: string;
+  index: number;
+  theme: ReaderTheme;
+  bookmark?: import("@/lib/types").Bookmark;
+  onToggleBookmark: () => void;
+  onOpenNote: () => void;
+  isActiveNote: boolean;
+  note?: string;
+  onNoteChange: (text: string) => void;
+  onCloseNote: () => void;
+}
+
+function ParagraphBlock({
+  text,
+  index,
+  theme,
+  bookmark,
+  onToggleBookmark,
+  onOpenNote,
+  isActiveNote,
+  note,
+  onNoteChange,
+  onCloseNote,
+}: ParagraphBlockProps) {
+  const textColor =
+    theme === "dark"
+      ? "text-zinc-200"
+      : theme === "sepia"
+        ? "text-stone-700 dark:text-amber-50/90"
+        : "text-foreground/90";
+
+  const highlightBg = bookmark
+    ? bookmark.color === "emerald"
+      ? "bg-emerald-500/10 dark:bg-emerald-400/10"
+      : bookmark.color === "gold"
+        ? "bg-gold-soft/30 dark:bg-gold/15"
+        : "bg-rose-500/10 dark:bg-rose-400/10"
+    : "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4, delay: 0.05 * Math.min(index, 4) }}
+      className={cn(
+        "group relative -mx-2 rounded-lg px-2 py-1 transition-colors",
+        highlightBg
+      )}
+    >
+      <p className={cn("text-justify", textColor)}>{text}</p>
+
+      {/* Bookmark toggle — appears on hover or when bookmarked */}
+      <div
+        className={cn(
+          "absolute -right-1 top-1 flex flex-col gap-1 transition-opacity",
+          bookmark
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+        )}
+      >
+        <button
+          onClick={onToggleBookmark}
+          aria-label={bookmark ? "Remove bookmark" : "Add bookmark"}
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-full shadow-sm backdrop-blur transition-colors",
+            bookmark
+              ? bookmark.color === "emerald"
+                ? "bg-emerald text-primary-foreground"
+                : bookmark.color === "gold"
+                  ? "bg-gold text-primary-foreground"
+                  : "bg-rose-500 text-primary-foreground"
+              : "bg-background/80 text-muted-foreground hover:bg-emerald hover:text-primary-foreground"
+          )}
+        >
+          <Bookmark className={cn("h-3.5 w-3.5", bookmark && "fill-current")} />
+        </button>
+        {bookmark && (
+          <button
+            onClick={onOpenNote}
+            aria-label="Edit note"
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-full shadow-sm backdrop-blur transition-colors",
+              note
+                ? "bg-gold text-primary-foreground"
+                : "bg-background/80 text-muted-foreground hover:bg-gold hover:text-primary-foreground"
+            )}
+          >
+            <StickyNote className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Inline note editor */}
+      {bookmark && isActiveNote && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          className="mt-2 overflow-hidden"
+        >
+          <div className="rounded-lg border border-gold/30 bg-gold-soft/20 p-3">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-accent-foreground">
+                <StickyNote className="h-3 w-3" />
+                Personal note
+              </span>
+              <button
+                onClick={onCloseNote}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Close note"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <textarea
+              value={note || ""}
+              onChange={(e) => onNoteChange(e.target.value)}
+              placeholder="Add your reflection…"
+              className="min-h-[60px] w-full resize-y rounded-md border border-border/40 bg-background/60 p-2 text-sm text-foreground outline-none focus:border-emerald/40"
+              autoFocus
+            />
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
   );
 }

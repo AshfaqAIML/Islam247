@@ -19,8 +19,10 @@ import { TasbeehView } from "@/components/islamic/tasbeeh-view";
 import { NamesView } from "@/components/islamic/names-view";
 import { FavoritesView } from "@/components/islamic/favorites-view";
 import { CalendarView } from "@/components/islamic/calendar-view";
+import { BookmarksView } from "@/components/islamic/bookmarks-view";
 import { AudioPlayer } from "@/components/islamic/audio-player";
 import { DownloadView } from "@/components/islamic/download-view";
+import { SettingsView } from "@/components/islamic/settings-view";
 
 function ViewRouter() {
   const view = useAppStore((s) => s.view);
@@ -54,8 +56,12 @@ function ViewRouter() {
       return <FavoritesView />;
     case "calendar":
       return <CalendarView />;
+    case "bookmarks":
+      return <BookmarksView />;
     case "download":
       return <DownloadView />;
+    case "settings":
+      return <SettingsView />;
     default:
       return <HomeView />;
   }

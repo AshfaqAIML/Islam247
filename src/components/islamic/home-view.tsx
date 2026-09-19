@@ -17,6 +17,7 @@ import {
   Star,
   Calendar,
   Bookmark,
+  Settings,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
@@ -107,6 +108,20 @@ const quickAccess: {
     desc: "Saved items",
     icon: Bookmark,
     color: "from-rose-500 to-pink-600",
+  },
+  {
+    id: "bookmarks",
+    label: "Bookmarks",
+    desc: "Notes & highlights",
+    icon: Bookmark,
+    color: "from-amber-600 to-yellow-700",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    desc: "Reader & goals",
+    icon: Settings,
+    color: "from-slate-500 to-slate-700",
   },
 ];
 

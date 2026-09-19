@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Flame, BookOpen, Clock, Calendar, TrendingUp } from "lucide-react";
+import { Flame, BookOpen, Clock, Calendar, TrendingUp, Target } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
 import { StarMark } from "./star-mark";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 // Generate last-7-days activity sparkline data.
@@ -30,10 +31,16 @@ function getLast7Days(
   return days;
 }
 
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function ReadingStatsWidget() {
   const readingStats = useAppStore((s) => s.readingStats);
   const getStreak = useAppStore((s) => s.getStreak);
   const getTotalStats = useAppStore((s) => s.getTotalStats);
+  const dailyGoalAyahs = useAppStore((s) => s.dailyGoalAyahs);
   const setView = useAppStore((s) => s.setView);
 
   const streak = getStreak();
@@ -41,6 +48,14 @@ export function ReadingStatsWidget() {
   const last7 = getLast7Days(readingStats);
   const maxValue = Math.max(1, ...last7.map((d) => d.value));
   const activeDays = last7.filter((d) => d.value > 0).length;
+
+  // Today's goal progress (chapters count as ~5 ayah-equivalents).
+  const todayStat = readingStats[todayStr()];
+  const todayProgress = todayStat
+    ? todayStat.ayahsRead + todayStat.chaptersRead * 5
+    : 0;
+  const goalPct = Math.min(100, (todayProgress / Math.max(1, dailyGoalAyahs)) * 100);
+  const goalMet = todayProgress >= dailyGoalAyahs;
 
   const navigate = (v: ViewId) => {
     setView(v);
@@ -162,6 +177,42 @@ export function ReadingStatsWidget() {
                 })}
               </div>
             </div>
+
+            {/* Daily goal progress */}
+            <button
+              onClick={() => navigate("settings")}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors",
+                goalMet
+                  ? "border-gold/40 bg-gold-soft/20"
+                  : "border-border/40 bg-card/40 hover:border-emerald/30"
+              )}
+            >
+              <div
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                  goalMet
+                    ? "bg-gold text-primary-foreground"
+                    : "bg-emerald-soft text-emerald"
+                )}
+              >
+                <Target className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground">
+                    {goalMet ? "Daily goal achieved!" : "Today's goal"}
+                  </span>
+                  <span className="text-[11px] tabular-nums text-muted-foreground">
+                    {todayProgress}/{dailyGoalAyahs}
+                  </span>
+                </div>
+                <Progress
+                  value={goalPct}
+                  className={cn("h-1.5", goalMet && "[&>div]:bg-gold")}
+                />
+              </div>
+            </button>
 
             {/* CTA */}
             {totals.days === 0 ? (

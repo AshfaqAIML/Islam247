@@ -14,6 +14,8 @@ export type ViewId =
   | "names"
   | "favorites"
   | "calendar"
+  | "bookmarks"
+  | "settings"
   | "download";
 
 export type BookCategory = "Fiqh" | "Tafsir" | "Aqeedah" | "Seerah" | "History";
@@ -108,4 +110,16 @@ export interface ReadingProgress {
   chapterIndex: number;
   scrollPercent: number;
   lastRead: number; // timestamp
+}
+
+// A bookmark highlights a specific passage in a book chapter
+export interface Bookmark {
+  id: string; // `${bookId}-${chapterIndex}-${paragraphIndex}`
+  bookId: string;
+  chapterIndex: number;
+  paragraphIndex: number;
+  excerpt: string; // the highlighted text snippet
+  note?: string; // optional personal note
+  color: "emerald" | "gold" | "rose";
+  createdAt: number;
 }
