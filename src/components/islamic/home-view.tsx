@@ -79,6 +79,13 @@ const quickAccess: {
     color: "from-indigo-600 to-blue-800",
   },
   {
+    id: "awrad",
+    label: "Awrad Fateh",
+    desc: "Ameer Kabir's litany",
+    icon: ScrollText,
+    color: "from-purple-600 to-violet-800",
+  },
+  {
     id: "prayer",
     label: "Prayer Times",
     desc: "Daily schedule",

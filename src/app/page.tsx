@@ -13,6 +13,7 @@ import { HadithView } from "@/components/islamic/hadith-view";
 import { Hadith40View } from "@/components/islamic/hadith40-view";
 import { DuasView } from "@/components/islamic/duas-view";
 import { MasnoonView } from "@/components/islamic/masnoon-view";
+import { AwradView } from "@/components/islamic/awrad-view";
 import { PrayerView } from "@/components/islamic/prayer-view";
 import { SearchView } from "@/components/islamic/search-view";
 import { AiView } from "@/components/islamic/ai-view";
@@ -48,6 +49,8 @@ function ViewRouter() {
       return <DuasView />;
     case "masnoon":
       return <MasnoonView />;
+    case "awrad":
+      return <AwradView />;
     case "prayer":
       return <PrayerView />;
     case "search":

@@ -115,6 +115,7 @@ export function Header() {
               view === "hadith40" ||
               view === "fatawa" ||
               view === "masnoon" ||
+              view === "awrad" ||
               view === "calendar" ||
               view === "favorites" ||
               view === "bookmarks" ||
@@ -215,6 +216,7 @@ export function Header() {
                 { id: "hadith40" as ViewId, label: "40 Hadith Nawawi" },
                 { id: "fatawa" as ViewId, label: "Fatawa" },
                 { id: "masnoon" as ViewId, label: "Masnoon Duas" },
+                { id: "awrad" as ViewId, label: "Awrad Fateh" },
                 { id: "calendar" as ViewId, label: "Hijri Calendar" },
                 { id: "history" as ViewId, label: "Reading History" },
                 { id: "favorites" as ViewId, label: "Favorites" },
@@ -255,6 +257,7 @@ const moreItems: {
   { id: "hadith40", label: "40 Hadith Nawawi", desc: "Foundational hadiths", icon: ScrollText },
   { id: "fatawa", label: "Fatawa", desc: "Islamic rulings", icon: Scale },
   { id: "masnoon", label: "Masnoon Duas", desc: "Daily prophetic duas", icon: Hand },
+  { id: "awrad", label: "Awrad Fateh", desc: "Ameer Kabir's litany", icon: ScrollText },
   { id: "calendar", label: "Hijri Calendar", desc: "Islamic dates & events", icon: Calendar },
   { id: "history", label: "Reading History", desc: "Activity heatmap", icon: TrendingUp },
   { id: "favorites", label: "Favorites", desc: "Your saved items", icon: Bookmark },

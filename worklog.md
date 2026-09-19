@@ -737,3 +737,33 @@ Stage Summary:
 - `MasnoonView` is implemented and registered in the ViewRouter; navigating to the "masnoon" view renders the category grid (10 categories, 17 duas total) and drilling into a category shows the dua cards with full Arabic/transliteration/translation/reference/virtue, favorite toggle (namespaced `masnoon-`), share menu, and an interactive counter wired to the persisted Zustand store.
 - Lint passes cleanly. The module-scope icon resolution follows the same pattern as `duas-view.tsx`, keeping the `react-hooks/static-components` rule satisfied.
 - No test files written. No changes to store, types, or data files.
+
+---
+Task ID: FEAT-AWRAD
+Agent: view-awrad
+Task: Build Awrad Fateh (Ameer Kabir) view
+
+Work Log:
+- Read worklog.md, src/lib/types.ts (ViewId includes "awrad"), src/lib/store.ts (favorites/duaCounts/incrementDua/resetDua/toggleFavorite), src/lib/data/awrad.ts (7 sections + awradVirtue + helpers), and the masnoon-view.tsx reference for the dua-card pattern (highlighted Arabic block, SVG progress ring, counter with reset, favorite + share).
+- Read star-mark.tsx (StarMark, StarDivider, StarLattice), share-button.tsx (ShareButton data shape), globals.css token/utility names (hero-gradient, card-refined, font-arabic, font-arabic-display, animate-slow-spin, --emerald, --gold, --emerald-soft, --gold-soft).
+- Created `src/components/islamic/awrad-view.tsx` exporting `AwradView` ("use client"):
+  - Hero header card with `hero-gradient` bg + `StarLattice` overlay + slowly-rotating `StarMark` (opacity 0.08, `animate-slow-spin`) in corner; centered Arabic title "أورد الفتح" via `font-arabic-display` emerald, `StarDivider`, English subtitle "Awrad al-Fatiha — The Litany of Ameer Kabir", description mentioning Mir Syed Ali Hamadani (RA) and Kashmir mosque recitation, gold "Demo content" badge, section/item counts.
+  - Virtue card: `bg-gold-soft/10 border-gold/20` with Sparkles icon, splits `awradVirtue` on `\n\n` into separate paragraphs.
+  - Rounded-full search Input with Search icon (clear button when query non-empty) — filters items by arabic/transliteration/translation/reference/type and section title.
+  - Sections rendered in order; each section header shows order number, Arabic title, English title, "Section X of N", item count badge; StarDivider between sections.
+  - AwradItem card: type badge color-coded (quran=emerald-soft/emerald, dhikr=gold-soft/gold, dua=emerald-soft/70, salawat=gold-soft/70, name=teal), index badge, prominent count badge (×N) that switches to gold on completion, favorite heart (keyed `awrad-${item.id}`), ShareButton; highlighted Arabic block (emerald-soft→gold-soft gradient, `font-arabic`, large, right-aligned, `dir="rtl"`, leading-loose); italic transliteration; translation; gold reference row with BookOpen icon; optional gold-tinted note box with Sparkles; SVG progress ring + tappable emerald-gradient increment button (shows count, switches to gold + Check on completion), `/ target` text, remaining/complete status line, Progress bar + RotateCcw reset button — wired to `duaCounts`/`incrementDua`/`resetDua` from store using the `awrad-${item.id}` key.
+  - Uses `card-refined` for hover depth on each item card.
+  - framer-motion staggered entrance (container variants + item variants) for cards and section headers (`whileInView`).
+  - Empty state with Search icon, "No litanies found" message, and clear-search button.
+  - Mobile-first responsive (`flex-col sm:flex-row` counter, `text-2xl sm:text-3xl` Arabic sizing, `px-4 py-6 sm:px-6 sm:py-8` container).
+- Updated `src/app/page.tsx`:
+  - Added `import { AwradView } from "@/components/islamic/awrad-view";` next to the MasnoonView import.
+  - Added `case "awrad": return <AwradView />;` in the ViewRouter switch between `masnoon` and `prayer`.
+- Ran `bun run lint` → clean (only `$ eslint .` echoed, no errors/warnings).
+- Verified dev.log: server responds 200 OK after edits; no errors traceable to awrad-view.tsx. (Pre-existing unrelated `ReferenceError: Hand is not defined` in header.tsx is from another agent's file and was already resolved in later compiles.)
+
+Stage Summary:
+- AwradView component complete at `src/components/islamic/awrad-view.tsx`.
+- Hero header with rotating star + StarLattice + Arabic title + virtue card + search + 7 color-coded sections + per-item counter ring + favorites/share all wired to the Zustand store.
+- page.tsx ViewRouter now routes `view === "awrad"` to `<AwradView />`.
+- Lint passes; dev server returns 200 OK.
