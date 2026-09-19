@@ -21,12 +21,12 @@ import {
   TrendingUp,
   Scale,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
-import { getDailyAyah } from "@/lib/data/quran";
-import { getDailyHadith } from "@/lib/data/hadith";
-import { getDailyDua } from "@/lib/data/duas";
+import { getDailyAyah, dailyAyahs } from "@/lib/data/quran";
+import { getDailyHadith, hadithCollections } from "@/lib/data/hadith";
+import { getDailyDua, duaCategories } from "@/lib/data/duas";
 import { getBookById } from "@/lib/data/books";
 import { StarMark, StarDivider } from "./star-mark";
 import { ReadingStatsWidget } from "./reading-stats-widget";
@@ -160,16 +160,26 @@ export function HomeView() {
   const incrementTasbeeh = useAppStore((s) => s.incrementTasbeeh);
   const resetTasbeeh = useAppStore((s) => s.resetTasbeeh);
   const [pressed, setPressed] = useState(false);
-  const greeting = useMemo(() => {
+  // Compute date-dependent content only on the client to avoid hydration mismatches.
+  // Initial state uses fixed defaults (not date-dependent) so server and client match.
+  const [greeting, setGreeting] = useState("Assalamu Alaikum");
+  const [dailyAyah, setDailyAyah] = useState(dailyAyahs[0]);
+  const [dailyHadith, setDailyHadith] = useState<{ hadith: typeof hadithCollections[0]["hadiths"][0]; collection: typeof hadithCollections[0] } | null>(null);
+  const [dailyDua, setDailyDua] = useState<{ dua: typeof duaCategories[0]["duas"][0]; category: typeof duaCategories[0] } | null>(null);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return "Assalamu Alaikum · Good morning";
-    if (hour >= 12 && hour < 17) return "Assalamu Alaikum · Good afternoon";
-    if (hour >= 17 && hour < 21) return "Assalamu Alaikum · Good evening";
-    return "Assalamu Alaikum · Good night";
+    let g = "Assalamu Alaikum · Good night";
+    if (hour >= 5 && hour < 12) g = "Assalamu Alaikum · Good morning";
+    else if (hour >= 12 && hour < 17) g = "Assalamu Alaikum · Good afternoon";
+    else if (hour >= 17 && hour < 21) g = "Assalamu Alaikum · Good evening";
+    setGreeting(g);
+    setDailyAyah(getDailyAyah());
+    setDailyHadith(getDailyHadith());
+    setDailyDua(getDailyDua());
   }, []);
-  const dailyAyah = getDailyAyah();
-  const dailyHadith = getDailyHadith();
-  const dailyDua = getDailyDua();
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const continueReading = Object.values(readingProgress).sort(
     (a, b) => b.lastRead - a.lastRead
@@ -302,6 +312,8 @@ export function HomeView() {
               <StarMark className="h-full w-full" />
             </div>
             <div className="relative z-10">
+              {dailyHadith ? (
+              <>
               <div className="flex items-center justify-between">
                 <Badge
                   variant="secondary"
@@ -325,6 +337,15 @@ export function HomeView() {
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
                 Narrated by {dailyHadith.hadith.narrator}
               </p>
+              </>
+              ) : (
+                <div className="flex h-32 items-center justify-center">
+                  <Badge variant="secondary" className="bg-emerald-soft text-emerald">
+                    <Library className="mr-1 h-3 w-3" />
+                    Hadith of the Day
+                  </Badge>
+                </div>
+              )}
             </div>
           </Card>
         </motion.div>
@@ -343,6 +364,8 @@ export function HomeView() {
           </div>
           <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex-1">
+              {dailyDua ? (
+              <>
               <div className="flex items-center justify-between">
                 <Badge
                   variant="secondary"
@@ -368,6 +391,15 @@ export function HomeView() {
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
                 {dailyDua.dua.reference}
               </p>
+              </>
+              ) : (
+                <div className="flex h-24 items-center justify-center">
+                  <Badge variant="secondary" className="bg-emerald-soft text-emerald">
+                    <Hand className="mr-1 h-3 w-3" />
+                    Dua of the Day
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
         </Card>
