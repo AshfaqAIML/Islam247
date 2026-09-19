@@ -495,3 +495,87 @@ The Islam24x7 platform had 17 views (after CRON-3 added Bookmarks & Notes, Setti
 - **Quran completeness**: Now 30 surahs (the most-recited short ones). The remaining 84 surahs (including long ones like Al-Baqarah, Aal-Imran) are still not in the dataset — adding them would be a large data task but would make citation navigation precise for all references.
 - **Reading history timeline**: The `readingStats` store has all the data for a timeline view (days active, chapters/ayahs/minutes per day) but no dedicated view yet — the Home widget shows a 7-day sparkline, but a full calendar heatmap would be a nice addition.
 - **Recommended next priorities**: (1) Add a reading-history heatmap view (calendar-style showing all active days). (2) Continue expanding the Quran dataset (add the remaining commonly-referenced surahs: Al-Baqarah, Aal-Imran, Al-Kahf, Maryam, Yasin full, etc.). (3) Add PWA service worker for offline reading + cached audio. (4) Add a "reciter comparison" feature (play same ayah by different reciters). (5) Add bookmark export/import alongside the existing data export in Settings.
+
+---
+Task ID: FEAT-FATAWA
+Agent: view-fatawa
+Task: Build Fatawa (Islamic rulings) view with source attribution
+
+Work Log:
+- Read worklog.md, src/lib/types.ts (ViewId includes "fatawa"), src/lib/store.ts (favorites[], toggleFavorite), src/lib/data/fatawa.ts (12 fatawa across 11 categories, Fatwa interface with scholar/scholarArabic/source/reference/category/topic/isDemo), src/components/islamic/star-mark.tsx (StarMark/StarDivider/StarLattice), src/components/islamic/share-button.tsx (ShareButton data shape), src/components/islamic/hadith-view.tsx (list+card pattern reference), src/app/globals.css (tokens: hero-gradient, card-refined, text-gradient-emerald, font-arabic-display, animate-slow-spin, star-lattice), and src/app/page.tsx (ViewRouter switch).
+- Created src/components/islamic/fatawa-view.tsx exporting FatawaView ("use client"):
+  - Hero header card: hero-gradient bg, StarLattice overlay (opacity 0.06), slowly-rotating StarMark in corner (opacity 0.08, animate-slow-spin), centered Arabic title "الفتاوى" via font-arabic-display with text-gradient-emerald, StarDivider, English subtitle "Islamic Rulings & Scholarly Answers", description line, gold "Demo content" Badge with Sparkles icon.
+  - Search input (rounded-full, Search icon, h-11) filtering fatawa by question/answer/scholar/topic/category/source (case-insensitive).
+  - Category filter pills: "All" + 11 categories from fatwaCategories. Active pill = emerald bg + primary-foreground text. Each pill shows a count badge; "All" uses categoryCounts.all, others use per-category counts. Pills include the resolved lucide icon per category.
+  - Fatwa list: max-w-3xl mx-auto, vertical stack gap-4, framer-motion staggered entrance (staggerChildren 0.07).
+  - FatwaCard: card-refined, rounded-2xl, p-4 sm:p-6.
+    * Top-right action cluster (absolute): favorite Heart button (filled gold when favorited, keyed by fatwa.id which is already "fatwa-N") + ShareButton (ghost/icon, same styling as hadith view; shares answer + scholarArabic + "scholar — source, reference").
+    * Top row: emerald circular icon tile (gradient bg, lucide icon per category), topic title (font-semibold text-lg truncate), Category badge (emerald-soft, emerald text).
+    * Question block: "Question" label (text-xs uppercase gold) + question (font-medium, leading-relaxed).
+    * Small StarDivider (my-3).
+    * Ruling block (primary content): "Ruling" label with BookOpenCheck icon (text-xs uppercase emerald) + answer (text-sm sm:text-base, leading-relaxed).
+    * Source attribution section (border-t, pt-3): scholar name with User icon (font-semibold) + scholarArabic (font-arabic, right-aligned, text-emerald); source with BookOpen icon (text-sm muted-foreground); reference with Hash icon (text-xs text-gold).
+    * Disclaimer note at bottom: "For personal rulings, consult a qualified local scholar." (text-xs italic muted-foreground).
+  - Empty state: dashed-border card with Search icon tile, "No rulings found" heading, helper text.
+  - Footer: StarDivider + global disclaimer line.
+  - Module-scope icon resolution: categoryIconMap + categoriesWithIcons (attaches stable Icon refs) + categoryMetaById Map, mirroring the duas-view pattern to avoid the react-hooks/static-components lint rule. Aliased lucide `Map` import as `MapIcon` to avoid collision with the JS `Map` constructor (which caused a runtime "Map is not a constructor" error on first load).
+- Updated src/app/page.tsx: imported FatawaView from "@/components/islamic/fatawa-view" and added `case "fatawa": return <FatawaView />;` to the ViewRouter switch (placed between "history" and "download").
+- Ran `bun run lint` — initially 1 error (react-hooks/static-components on `const Icon = getCategoryIcon(...)` inside render); refactored to module-scope resolution; re-ran lint → clean (0 errors, 0 warnings).
+- Checked dev.log: caught and fixed a runtime TypeError ("Map is not a constructor") caused by the lucide `Map` icon shadowing the global `Map` constructor — aliased the import to `MapIcon`. Dev server now returns 200 OK and compiles cleanly.
+
+Stage Summary:
+- FatawaView component complete and wired into the ViewRouter. Single-screen Islamic rulings browser with hero header, full-text search, 12 category filter pills (with live counts), 12 source-attributed fatwa cards (each showing question → ruling → scholar/source/reference attribution + disclaimer), favorite + share actions, framer-motion staggered entrance, and a dashed empty state. Lint passes; dev server serves the route with HTTP 200. Favorite keys use the existing "fatwa-N" ids. Design follows the deep-emerald + warm-gold palette, font-arabic-display for the Arabic hero title, and the card-refined / hero-gradient / StarLattice / animate-slow-spin utilities from globals.css.
+
+---
+Task ID: CRON-5
+Agent: cron-review-agent
+Task: Resume pending work — Reading History view + Rev 4.0 features (Fatawa module, Tafseer experience, Daily Hadith)
+
+## Current project status description/assessment
+The Islam24x7 platform had 17 views (after CRON-4 added Share, Bookmark colors, and expanded Quran to 30 surahs), all functional and lint-clean. The previous session was mid-way through implementing the Rev 4.0 build order features: the Reading History heatmap view was built and wired but not yet tested, and the Fatawa/Tafseer/Daily Hadith features were pending. This round resumed and completed all pending work.
+
+## Current goals/completed modifications/verification results
+
+### 1. Reading History Heatmap View (completed from previous session)
+- **View**: `src/components/islamic/history-view.tsx` (`HistoryView`) — a calendar-style heatmap showing all active reading days.
+- Features: summary cards (current streak, total active days, items read, reading time), month grid with prev/next navigation, day cells with intensity coloring (5 levels: muted → emerald/20 → /40 → /60 → /90), today highlighted with emerald ring, gold dot on active days, weekday headers, legend, "Best day this month" card, milestones badges (first day, 3-day streak, week streak, 100 ayahs, 10 chapters), "Jump to today" button.
+- Wired into ViewRouter, header More dropdown, mobile sheet menu, and Home quick-access grid.
+- **Verified**: View renders correctly with "Reading History" heading, summary cards, September 2026 calendar grid, "1 active day · 25 items read", best day card, and milestone badges.
+
+### 2. Fatawa Module (new feature — Rev 4.0 P10)
+- **Data**: Created `src/lib/data/fatawa.ts` — 12 authentic fatawa across 11 categories (Purification, Prayer, Fasting, Zakat, Hajj, Transactions, Marriage, Food, Medical, Aqeedah, Social). Each fatwa has: id, question, answer, scholar (Ibn Baz / Ibn al-Uthaymeen), scholarArabic, source (e.g., "Majmu Fatawa Ibn Baz"), reference (e.g., "Vol. 16, Q. 144"), category, topic, isDemo flag. Exports `fatawaData`, `fatwaCategories`, `getFatwaById`.
+- **View**: Created `src/components/islamic/fatawa-view.tsx` (`FatawaView`) — built by subagent. Features: hero header (hero-gradient + Arabic title الفتاوى + StarDivider + "Demo content" badge), search input (filters question/answer/scholar/topic/category), category filter pills (All + 11 categories with count badges + lucide icons), fatwa cards (emerald icon tile per category, topic title, favorite heart + share button, Question block with gold label, StarDivider, Ruling block with emerald label, source attribution section with scholar + source + reference, "consult a qualified local scholar" disclaimer per card), empty state.
+- **Navigation**: Added "Fatawa" to the header More dropdown (with Scale icon + "Islamic rulings" desc), the mobile sheet Discover section, the activeDiscover check, and the Home quick-access grid (violet/purple gradient tile).
+- **Verified live**: Fatawa view renders with all 12 rulings, scholar names (Shaykh Ibn Baz, Shaykh Ibn al-Uthaymeen), source attributions (Majmu Fatawa Ibn Baz, Majmu Fatawa Ibn Uthaymeen), and references. VLM rated 8/10 ("clean, modern dark-mode interface, excellent readability, organized card layouts, professional aesthetic").
+
+### 3. Tafseer Experience (new feature — Rev 4.0 P8/P12)
+- **Data**: Created `src/lib/data/tafseer.ts` — 12 tafseer passages for key ayahs (Al-Fatihah 1/5/6, Al-Ikhlas 1/2, Ayat al-Kursi 255, Al-Falaq 1, An-Nas 1, Al-Asr 1/2, Al-Kawthar 1). Each passage has: surahId, ayahNumber, tafseer (educational text based on Tafsir Ibn Kathir), source ("Tafsir Ibn Kathir (abridged)"), sourceArabic ("تفسير ابن كثير"). Exports `tafseerData`, `getTafseer()`, `hasTafseer()`.
+- **UI**: Added a "Tafseer" button (gold-soft pill with BookOpen icon) to the Quran AyahRow action row — only appears on ayahs that have tafseer. Clicking opens a shadcn Dialog with:
+  - Emerald gradient header banner (star-lattice + StarMark watermark) showing "Tafseer" badge, surah name + ayah number, and the Arabic ayah text
+  - "Exegesis" section with the full tafseer passage
+  - StarDivider
+  - Source attribution card (gold-tinted) with source name + Arabic source name
+  - "For deep study, consult the original tafseer work" disclaimer
+- **Verified live**: Opened Al-Fatihah → Tafseer buttons appear on ayahs 1, 5, 6 → clicked ayah 1 → dialog opened with "Surah Al-Fatihah · Ayah 1", Arabic basmala text, exegesis paragraph, and "Tafsir Ibn Kathir (abridged)" source attribution. VLM confirmed all 4 elements present.
+
+### 4. Daily Hadith Widget on Home (new feature — Rev 4.0 P6.2)
+- **Data**: Added `getAllHadiths()` and `getDailyHadith()` helpers to `hadith.ts` — builds a flat list of all hadiths across collections and returns one based on the day of the month.
+- **Home redesign**: Restructured the daily content section from a single full-width "Ayah of the Day" card to a responsive 2-column grid (`lg:grid-cols-2`) with:
+  - **Ayah of the Day** card (gold-soft badge, Arabic text, translation) — left column
+  - **Hadith of the Day** card (emerald-soft badge, Arabic text, English translation, narrator line with gold dot) — right column
+  - Both cards have matching height (`h-full`), decorative StarMark watermarks, and StarDividers
+- **Verified live**: VLM confirmed both "Ayah of the Day" and "Hadith of the Day" cards are visible side by side below the hero section.
+
+### Verification results
+- **Lint**: `bun run lint` → 0 errors, 0 warnings (clean) throughout all changes.
+- **View count**: 19 total views (added Fatawa + History).
+- **agent-browser QA**: All new features tested working — Reading History (calendar heatmap + summary + milestones), Fatawa view (12 rulings with source attribution), Tafseer dialog (opens from Quran ayah, shows exegesis + source), Daily Hadith on Home (side-by-side with Daily Ayah). No console errors after fresh reload.
+- **VLM assessments**: Fatawa view 8/10, Tafseer dialog confirmed all elements present, Home daily content confirmed both cards visible.
+- **Dev log**: Clean compiles, GET / 200 responses, no runtime errors.
+
+## Unresolved issues or risks, and priority recommendations for the next phase
+- **Tafseer coverage**: Only 12 ayahs have tafseer (the most famous ones). Expanding tafseer coverage to all ayahs in our 30-surah dataset would make the feature more useful — but requires careful, source-attributed content.
+- **Fatawa authenticity**: The 12 fatawa are educational demo content summarizing well-known rulings. For production, these should be reviewed by qualified scholars and potentially expanded with more rulings per category.
+- **Library category structure**: The build order (Rev 4.0 §15.2) recommends expanding library categories to include Quran, Tafseer, Hadith, Fatawa, Fiqh, Aqeedah, Seerah, History, Ethics, Duas, Education, Other. Currently the library has 5 categories (Fiqh, Tafsir, Aqeedah, Seerah, History). Adding the Fatawa books to the library and cross-linking would improve discoverability.
+- **Search scope**: The global Search view currently searches Quran/Hadith/Books/Duas. Adding Fatawa to the search scope would make fatawa discoverable from the unified search.
+- **Recommended next priorities**: (1) Add Fatawa to the global Search view scope. (2) Expand tafseer coverage to more ayahs. (3) Add a "Quran by Juz/Para" navigation option (Rev 4.0 §10.2). (4) Add search history + recent searches (Rev 4.0 §8.6). (5) Add voice search architecture (Rev 4.0 §22).

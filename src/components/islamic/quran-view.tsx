@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { quranData } from "@/lib/data/quran";
+import { getTafseer, hasTafseer } from "@/lib/data/tafseer";
 import type { Ayah, Surah } from "@/lib/types";
 import { StarMark, StarDivider } from "./star-mark";
 import { ShareButton } from "./share-button";
@@ -23,6 +24,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const BASMALA_ARABIC = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
@@ -448,6 +456,9 @@ function AyahRow({
   const setAudioSurah = useAppStore((s) => s.setAudioSurah);
   const audioSurahId = useAppStore((s) => s.audioSurahId);
   const isPlayingThis = audioSurahId === surahId;
+  const [tafseerOpen, setTafseerOpen] = useState(false);
+  const tafseer = getTafseer(surahId, ayah.number);
+  const hasTafseerAvailable = hasTafseer(surahId, ayah.number);
 
   return (
     <Card className="group card-refined relative rounded-2xl border-border/60 bg-card p-4 transition-all hover:border-emerald/30 sm:p-5">
@@ -527,7 +538,7 @@ function AyahRow({
             </span>
           </div>
 
-          {/* Action row: play + transliteration */}
+          {/* Action row: play + tafseer + transliteration */}
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
@@ -542,6 +553,17 @@ function AyahRow({
               )}
               {isPlayingThis ? "Playing" : "Recite"}
             </button>
+            {hasTafseerAvailable && (
+              <button
+                type="button"
+                onClick={() => setTafseerOpen(true)}
+                className="flex items-center gap-1.5 rounded-full bg-gold-soft px-3 py-1 text-xs font-medium text-accent-foreground transition-colors hover:bg-gold hover:text-primary-foreground"
+                aria-label="View tafseer"
+              >
+                <BookOpen className="h-3 w-3" />
+                Tafseer
+              </button>
+            )}
           </div>
 
           {/* Transliteration */}
@@ -555,6 +577,69 @@ function AyahRow({
           </p>
         </div>
       </div>
+
+      {/* Tafseer Dialog */}
+      {tafseer && (
+        <Dialog open={tafseerOpen} onOpenChange={setTafseerOpen}>
+          <DialogContent className="max-w-2xl gap-0 border-emerald/20 p-0">
+            {/* Header banner */}
+            <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-br from-emerald to-emerald/80 p-5 text-primary-foreground">
+              <div className="absolute inset-0 star-lattice opacity-[0.12]" />
+              <div className="absolute -right-4 -top-4 opacity-15">
+                <StarMark className="h-20 w-20" showGold={false} />
+              </div>
+              <DialogHeader className="relative z-10 space-y-1">
+                <Badge className="w-fit bg-primary-foreground/15 text-primary-foreground">
+                  <BookOpen className="mr-1 h-3 w-3" />
+                  Tafseer
+                </Badge>
+                <DialogTitle className="text-lg font-bold">
+                  Surah {surahName} · Ayah {ayah.number}
+                </DialogTitle>
+                <p className="text-right font-arabic text-xl leading-loose text-primary-foreground/95">
+                  {ayah.arabic}
+                </p>
+              </DialogHeader>
+            </div>
+
+            {/* Tafseer body */}
+            <div className="space-y-4 p-5">
+              <DialogDescription className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Exegesis
+              </DialogDescription>
+              <p className="text-sm leading-relaxed text-foreground">
+                {tafseer.tafseer}
+              </p>
+
+              <StarDivider className="my-2" />
+
+              {/* Source attribution */}
+              <div className="rounded-xl border border-gold/30 bg-gold-soft/20 p-3">
+                <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent-foreground">
+                  <BookOpen className="h-3 w-3" />
+                  Source
+                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {tafseer.source}
+                    </p>
+                    {tafseer.sourceArabic && (
+                      <p className="font-arabic text-sm text-emerald">
+                        {tafseer.sourceArabic}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-center text-[11px] italic text-muted-foreground">
+                For deep study, consult the original tafseer work. · Demo content
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }

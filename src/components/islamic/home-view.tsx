@@ -19,11 +19,13 @@ import {
   Bookmark,
   Settings,
   TrendingUp,
+  Scale,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
 import { getDailyAyah } from "@/lib/data/quran";
+import { getDailyHadith } from "@/lib/data/hadith";
 import { getBookById } from "@/lib/data/books";
 import { StarMark, StarDivider } from "./star-mark";
 import { ReadingStatsWidget } from "./reading-stats-widget";
@@ -97,6 +99,13 @@ const quickAccess: {
     color: "from-emerald-600 to-teal-700",
   },
   {
+    id: "fatawa",
+    label: "Fatawa",
+    desc: "Islamic rulings",
+    icon: Scale,
+    color: "from-violet-500 to-purple-700",
+  },
+  {
     id: "calendar",
     label: "Hijri Calendar",
     desc: "Islamic dates",
@@ -151,6 +160,7 @@ export function HomeView() {
     return "Assalamu Alaikum · Good night";
   }, []);
   const dailyAyah = getDailyAyah();
+  const dailyHadith = getDailyHadith();
 
   const continueReading = Object.values(readingProgress).sort(
     (a, b) => b.lastRead - a.lastRead
@@ -236,40 +246,80 @@ export function HomeView() {
         </div>
       </motion.div>
 
-      {/* Daily Ayah */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="mt-6"
-      >
-        <Card className="relative overflow-hidden border-emerald/20 bg-gradient-to-br from-emerald/5 to-gold/5 p-6 sm:p-8">
-          <div className="absolute right-0 top-0 h-32 w-32 translate-x-12 -translate-y-12 opacity-5">
-            <StarMark className="h-full w-full" showGold={false} />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between">
-              <Badge
-                variant="secondary"
-                className="bg-gold-soft text-accent-foreground"
-              >
-                <Sun className="mr-1 h-3 w-3" />
-                Ayah of the Day
-              </Badge>
-              <span className="text-xs font-medium text-muted-foreground">
-                {dailyAyah.reference}
-              </span>
+      {/* Daily content: Ayah + Hadith */}
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        {/* Daily Ayah */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <Card className="relative h-full overflow-hidden border-emerald/20 bg-gradient-to-br from-emerald/5 to-gold/5 p-6 sm:p-7">
+            <div className="absolute right-0 top-0 h-32 w-32 translate-x-12 -translate-y-12 opacity-5">
+              <StarMark className="h-full w-full" showGold={false} />
             </div>
-            <p className="mt-4 text-right font-arabic text-2xl leading-loose text-foreground sm:text-3xl">
-              {dailyAyah.arabic}
-            </p>
-            <StarDivider className="my-4" />
-            <p className="text-center text-base italic leading-relaxed text-muted-foreground sm:text-lg">
-              &ldquo;{dailyAyah.translation}&rdquo;
-            </p>
-          </div>
-        </Card>
-      </motion.div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between">
+                <Badge
+                  variant="secondary"
+                  className="bg-gold-soft text-accent-foreground"
+                >
+                  <Sun className="mr-1 h-3 w-3" />
+                  Ayah of the Day
+                </Badge>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {dailyAyah.reference}
+                </span>
+              </div>
+              <p className="mt-4 text-right font-arabic text-2xl leading-loose text-foreground sm:text-3xl">
+                {dailyAyah.arabic}
+              </p>
+              <StarDivider className="my-4" />
+              <p className="text-center text-base italic leading-relaxed text-muted-foreground sm:text-lg">
+                &ldquo;{dailyAyah.translation}&rdquo;
+              </p>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Daily Hadith */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <Card className="relative h-full overflow-hidden border-emerald/20 bg-gradient-to-br from-gold/5 to-emerald/5 p-6 sm:p-7">
+            <div className="absolute left-0 top-0 h-32 w-32 -translate-x-12 -translate-y-12 opacity-5">
+              <StarMark className="h-full w-full" />
+            </div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between">
+                <Badge
+                  variant="secondary"
+                  className="bg-emerald-soft text-emerald"
+                >
+                  <Library className="mr-1 h-3 w-3" />
+                  Hadith of the Day
+                </Badge>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {dailyHadith.collection.name} #{dailyHadith.hadith.number}
+                </span>
+              </div>
+              <p className="mt-4 text-right font-arabic text-xl leading-loose text-foreground sm:text-2xl">
+                {dailyHadith.hadith.arabic}
+              </p>
+              <StarDivider className="my-4" />
+              <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+                &ldquo;{dailyHadith.hadith.english}&rdquo;
+              </p>
+              <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-emerald">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold" />
+                Narrated by {dailyHadith.hadith.narrator}
+              </p>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
 
       {/* Quick Access Grid */}
       <motion.section

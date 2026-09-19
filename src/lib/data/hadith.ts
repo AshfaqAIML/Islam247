@@ -266,3 +266,21 @@ export function getHadithById(id: string): Hadith | undefined {
   }
   return undefined;
 }
+
+// Build a flat list of all hadiths across collections for daily rotation.
+export function getAllHadiths(): { hadith: Hadith; collection: HadithCollection }[] {
+  const all: { hadith: Hadith; collection: HadithCollection }[] = [];
+  for (const col of hadithCollections) {
+    for (const h of col.hadiths) {
+      all.push({ hadith: h, collection: col });
+    }
+  }
+  return all;
+}
+
+// Returns a hadith of the day based on the current date.
+export function getDailyHadith(): { hadith: Hadith; collection: HadithCollection } {
+  const all = getAllHadiths();
+  const day = new Date().getDate();
+  return all[day % all.length];
+}

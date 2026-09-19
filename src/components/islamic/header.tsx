@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download, Settings, TrendingUp } from "lucide-react";
+import { Moon, Sun, Search, Menu, X, ChevronDown, Star, ScrollText, Calendar, Bookmark, Heart, Download, Settings, TrendingUp, Scale } from "lucide-react";
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { ViewId } from "@/lib/types";
@@ -109,6 +109,7 @@ export function Header() {
             activeDiscover={
               view === "names" ||
               view === "hadith40" ||
+              view === "fatawa" ||
               view === "calendar" ||
               view === "favorites" ||
               view === "bookmarks" ||
@@ -206,6 +207,7 @@ export function Header() {
               {[
                 { id: "names" as ViewId, label: "99 Names of Allah" },
                 { id: "hadith40" as ViewId, label: "40 Hadith Nawawi" },
+                { id: "fatawa" as ViewId, label: "Fatawa" },
                 { id: "calendar" as ViewId, label: "Hijri Calendar" },
                 { id: "history" as ViewId, label: "Reading History" },
                 { id: "favorites" as ViewId, label: "Favorites" },
@@ -243,6 +245,7 @@ const moreItems: {
 }[] = [
   { id: "names", label: "99 Names of Allah", desc: "Asma ul Husna", icon: Star },
   { id: "hadith40", label: "40 Hadith Nawawi", desc: "Foundational hadiths", icon: ScrollText },
+  { id: "fatawa", label: "Fatawa", desc: "Islamic rulings", icon: Scale },
   { id: "calendar", label: "Hijri Calendar", desc: "Islamic dates & events", icon: Calendar },
   { id: "history", label: "Reading History", desc: "Activity heatmap", icon: TrendingUp },
   { id: "favorites", label: "Favorites", desc: "Your saved items", icon: Bookmark },

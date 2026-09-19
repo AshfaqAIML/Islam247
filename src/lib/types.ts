@@ -16,6 +16,7 @@ export type ViewId =
   | "calendar"
   | "bookmarks"
   | "history"
+  | "fatawa"
   | "settings"
   | "download";
 
