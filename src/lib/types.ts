@@ -12,6 +12,7 @@ export type ViewId =
   | "ai"
   | "tasbeeh"
   | "names"
+  | "prophetNames"
   | "favorites"
   | "calendar"
   | "bookmarks"

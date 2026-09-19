@@ -111,6 +111,7 @@ export function Header() {
             onNavigate={navigate}
             activeDiscover={
               view === "names" ||
+              view === "prophetNames" ||
               view === "hadith40" ||
               view === "fatawa" ||
               view === "calendar" ||
@@ -209,6 +210,7 @@ export function Header() {
               </p>
               {[
                 { id: "names" as ViewId, label: "99 Names of Allah" },
+                { id: "prophetNames" as ViewId, label: "99 Names of the Prophet ﷺ" },
                 { id: "hadith40" as ViewId, label: "40 Hadith Nawawi" },
                 { id: "fatawa" as ViewId, label: "Fatawa" },
                 { id: "calendar" as ViewId, label: "Hijri Calendar" },
@@ -247,6 +249,7 @@ const moreItems: {
   icon: typeof Star;
 }[] = [
   { id: "names", label: "99 Names of Allah", desc: "Asma ul Husna", icon: Star },
+  { id: "prophetNames", label: "99 Names of the Prophet ﷺ", desc: "Asma un Nabi", icon: Star },
   { id: "hadith40", label: "40 Hadith Nawawi", desc: "Foundational hadiths", icon: ScrollText },
   { id: "fatawa", label: "Fatawa", desc: "Islamic rulings", icon: Scale },
   { id: "calendar", label: "Hijri Calendar", desc: "Islamic dates & events", icon: Calendar },

@@ -685,3 +685,27 @@ The Islam24x7 platform had 19 views, all functional and lint-clean. This round f
 - **Tafseer coverage**: Still only 12 ayahs have tafseer. Expanding would improve the Tafseer feature.
 - **Advanced search filters**: Search has scope tabs but no author/language/category filters (Rev 5.0 §15.4).
 - **Recommended next priorities**: (1) Add voice search language selector. (2) Expand tafseer coverage. (3) Add advanced search filters. (4) Add "Search in this Book" to the Reader (§14). (5) Add Quran page navigation mode (§5.2).
+
+---
+Task ID: FEAT-PROPHET-NAMES
+Agent: view-prophet-names
+Task: Build 99 Names of Prophet Muhammad (SAW) view
+
+Work Log:
+- Read existing `worklog.md`, `src/lib/types.ts`, `src/lib/store.ts`, `src/lib/data/prophet-names.ts`, `src/components/islamic/star-mark.tsx`, and the reference `src/components/islamic/names-view.tsx` to understand the established design patterns (hero header with hero-gradient + StarLattice + rotating StarMark + font-arabic-display Arabic title + StarDivider; gold-tinted virtue card; rounded-full search; responsive 2–5 col grid of NameCards with favorite hearts + tooltips + Dialog detail; framer-motion staggered entrance).
+- Created `src/components/islamic/prophet-names-view.tsx` exporting `ProphetNamesView` as a `"use client"` component. It mirrors `names-view.tsx` exactly but is adapted for the Prophet's names:
+  - Hero header: `hero-gradient` background, `StarLattice` overlay, slowly-rotating `StarMark` (opacity 0.08) in the corner, large centered Arabic title "أَسْمَاءُ النَّبِيّ ﷺ" using `font-arabic-display`, English subtitle "The 99 Names of Prophet Muhammad ﷺ", and `StarDivider`.
+  - Virtue card: gold-tinted (`bg-gold-soft/10 border-gold/20`) with a `Sparkles` icon. Splits `prophetNamesVirtue` on `\n\n` and renders each paragraph as a separate `<blockquote>` (preserves the Quran ayah and the hadith as distinct paragraphs).
+  - Search input: `rounded-full` with a `Search` icon, filtering by number/transliteration/english/arabic.
+  - Grid: responsive `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`. Each `ProphetNameCard` uses `card-refined`, has a circular emerald-gradient number badge (top-left), a favorite heart button (top-right) using `toggleFavorite("prophetName-N")`, large `font-arabic` Arabic name (text-2xl, centered, text-emerald, leading-loose), transliteration (font-semibold), and italic English translation. Clicking opens a `Dialog` with full meaning. Framer-motion staggered entrance.
+  - Dialog detail (`ProphetNameDetail`): emerald-gradient header banner with `font-arabic-display` large Arabic, `StarLattice` + `StarMark` decoration, custom close button, "Name N of 99" badge, transliteration + english in `DialogHeader`, `StarDivider`, full meaning block, a gold-tinted salawat note prompting the user to send blessings (`اللَّهُمَّ صَلِّ عَلَى مُحَمَّد`), and footer with favorite toggle + close button.
+  - Wrapped grid in `TooltipProvider`. Empty-state card matches reference.
+- Updated `src/app/page.tsx` to import `ProphetNamesView` from `@/components/islamic/prophet-names-view` and added `case "prophetNames": return <ProphetNamesView />;` to the `ViewRouter` switch.
+- Ran `bun run lint` → clean (no errors or warnings).
+- Verified dev.log: page compiles successfully and serves HTTP 200.
+
+Stage Summary:
+- New view `ProphetNamesView` is live and wired into the single-page `ViewRouter` under `view === "prophetNames"`.
+- All 99 names of Prophet Muhammad ﷺ are searchable, displayed in a responsive card grid, favoritable (`prophetName-N` IDs integrate with the existing Zustand `favorites` store), and viewable in a rich detail Dialog with the salawat reminder.
+- Design language is fully consistent with the existing `NamesView` (deep emerald + warm gold palette, Islamic star motifs, Arabic typography via `font-arabic`/`font-arabic-display`, framer-motion entrance animations).
+- Lint clean, no build errors. No new routes created; no test files written.

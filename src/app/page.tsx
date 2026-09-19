@@ -17,6 +17,7 @@ import { SearchView } from "@/components/islamic/search-view";
 import { AiView } from "@/components/islamic/ai-view";
 import { TasbeehView } from "@/components/islamic/tasbeeh-view";
 import { NamesView } from "@/components/islamic/names-view";
+import { ProphetNamesView } from "@/components/islamic/prophet-names-view";
 import { FavoritesView } from "@/components/islamic/favorites-view";
 import { CalendarView } from "@/components/islamic/calendar-view";
 import { BookmarksView } from "@/components/islamic/bookmarks-view";
@@ -54,6 +55,8 @@ function ViewRouter() {
       return <TasbeehView />;
     case "names":
       return <NamesView />;
+    case "prophetNames":
+      return <ProphetNamesView />;
     case "favorites":
       return <FavoritesView />;
     case "calendar":

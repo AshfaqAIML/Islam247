@@ -93,6 +93,13 @@ const quickAccess: {
     color: "from-amber-500 to-yellow-600",
   },
   {
+    id: "prophetNames",
+    label: "Prophet ﷺ Names",
+    desc: "Asma un Nabi",
+    icon: Star,
+    color: "from-teal-600 to-emerald-800",
+  },
+  {
     id: "hadith40",
     label: "40 Hadith",
     desc: "Imam an-Nawawi",

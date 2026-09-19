@@ -21,6 +21,7 @@ import { fortyHadith } from "@/lib/data/forty-hadith";
 import { libraryBooks, getBookById } from "@/lib/data/books";
 import { duaCategories } from "@/lib/data/duas";
 import { namesOfAllah } from "@/lib/data/names";
+import { namesOfProphet } from "@/lib/data/prophet-names";
 import { getFatwaById } from "@/lib/data/fatawa";
 import { StarMark, StarDivider } from "./star-mark";
 import { Card } from "@/components/ui/card";
@@ -28,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type FavType = "quran" | "hadith" | "hadith40" | "fatawa" | "book" | "dua" | "name";
+type FavType = "quran" | "hadith" | "hadith40" | "fatawa" | "book" | "dua" | "name" | "prophetName";
 
 interface FavItem {
   id: string;
@@ -79,6 +80,11 @@ const typeMeta: Record<
     label: "Name of Allah",
     icon: Sparkles,
     color: "bg-gold-soft text-gold",
+  },
+  prophetName: {
+    label: "Name of the Prophet ﷺ",
+    icon: Sparkles,
+    color: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
   },
 };
 
@@ -193,6 +199,24 @@ export function FavoritesView() {
         }
         continue;
       }
+      // prophetName-N
+      if (favId.startsWith("prophetName-")) {
+        const num = Number(favId.split("-")[1]);
+        const n = namesOfProphet.find((x) => x.number === num);
+        if (n) {
+          out.push({
+            id: favId,
+            type: "prophetName",
+            title: n.transliteration,
+            subtitle: n.english,
+            excerpt: n.meaning,
+            reference: `Name ${n.number} of 99`,
+            arabic: n.arabic,
+            action: () => navigate("prophetNames"),
+          });
+        }
+        continue;
+      }
       // dua-${duaId}
       if (favId.startsWith("dua-")) {
         const duaId = favId.slice(4);
@@ -273,7 +297,8 @@ export function FavoritesView() {
     { id: "fatawa", label: "Fatawa", count: counts.fatawa || 0 },
     { id: "book", label: "Books", count: counts.book || 0 },
     { id: "dua", label: "Duas", count: counts.dua || 0 },
-    { id: "name", label: "Names", count: counts.name || 0 },
+    { id: "name", label: "Allah's Names", count: counts.name || 0 },
+    { id: "prophetName", label: "Prophet's Names", count: counts.prophetName || 0 },
   ];
 
   return (
