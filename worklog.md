@@ -630,3 +630,58 @@ The Islam24x7 platform had 19 views (after CRON-5 added Fatawa, Tafseer, Daily H
 - **Advanced search filters**: The search has scope tabs but no advanced filters (author, language, date) per Rev 4.0 §9.
 - **Voice search**: Not yet implemented (Rev 4.0 §22).
 - **Recommended next priorities**: (1) Add Quran Juz/Para navigation. (2) Expand tafseer coverage to more ayahs. (3) Add advanced search filters (author, category, language). (4) Add voice search via Web Speech API. (5) Add a "Quran by page" navigation mode.
+
+---
+Task ID: CRON-7
+Agent: cron-review-agent
+Task: Rev 5.0 build order — Quran Juz navigation, Voice search, Ayah cross-source links
+
+## Current project status description/assessment
+The Islam24x7 platform had 19 views, all functional and lint-clean. This round focused on the Rev 5.0 build order priorities: (1) Quran Juz/Para navigation (§5.2), (2) Voice search (§32), and (3) Ayah cross-source discovery (§17/§36). QA confirmed the platform was stable before development.
+
+## Current goals/completed modifications/verification results
+
+### 1. Quran Juz/Para Navigation (Rev 5.0 §5.2)
+- **Data**: Created `src/lib/data/juz.ts` with `Juz` interface and `juzData` array — maps our 30 surahs to 5 Juz groups (Juz 1 with Al-Fatihah, Juz 3 with Ayat al-Kursi, Juz 22 with Ya-Sin & Al-Mulk, Juz 27 with Ar-Rahman, Juz 30/Juz Amma with 25 short surahs). Exports `juzData`, `getJuzBySurah()`, `getSurahsInJuz()`.
+- **UI**: Added a "By Surah / By Juz" toggle to the Quran SurahList. In Juz mode:
+  - Shows a grid of Juz cards (number badge, name, Arabic name, "X surahs available" count)
+  - Clicking a Juz shows the surahs within it, with an "All Juz" back button
+  - Search input only appears in Surah mode (Juz mode uses the Juz list for navigation)
+- Added `Layers` icon import.
+- **Verified live**: Opened Quran → clicked "By Juz" → saw Juz 1 (1 surah), Juz 30 (25 surahs), Juz 22 (2 surahs) → clicked Juz 30 → saw all 25 Juz Amma surahs with "All Juz" back button.
+
+### 2. Voice Search (Rev 5.0 §32)
+- **Component**: Created `src/components/islamic/voice-search-button.tsx` (`VoiceSearchButton`) — a reusable mic button that uses the Web Speech API (`SpeechRecognition`/`webkitSpeechRecognition`):
+  - Supports configurable `lang` (default "en-US", can be set to Arabic/Urdu)
+  - Shows a mic icon that pulses red when listening, mic-off icon when active
+  - On transcript, calls `onTranscript(text)` + shows a toast "Heard: ..."
+  - Graceful degradation: returns null if Web Speech API is not supported (button doesn't render)
+  - Lazy `supported` state via `useState(() => ...)` to avoid setState-in-effect lint errors
+- **Integration**: Added the VoiceSearchButton to the Search view's input (right side, `pr-14` to make room). Voice transcript fills the search query + adds to recent searches.
+- **Verified live**: "Start voice search" button appears in the Search view.
+
+### 3. Ayah Cross-Source Links (Rev 5.0 §17/§36)
+- **Helper**: Added a `getRelatedContent(surahId, ayahNumber, translation)` function in `quran-view.tsx` that:
+  - Defines 17 theme keyword groups (mercy, prayer, charity, patience, fasting, hajj, parents, knowledge, heart, intention, peace, gratitude, morning/evening, protection, travel, food, sleep)
+  - Extracts themes from the ayah's English translation
+  - Searches Hadith, Fatawa, and Duas datasets for matching content (up to 3 per type)
+  - Returns `{ hadith: RelatedItem[], fatawa: RelatedItem[], duas: RelatedItem[] }`
+- **UI**: Added a "Related" button (neutral pill with Sparkles icon) to every AyahRow action row. Clicking opens a Dialog with:
+  - Emerald gradient header showing "Related Sources" + surah/ayah
+  - Sections for "Related Hadith", "Related Fatawa", "Related Duas" (each only shown if matches exist)
+  - Each item: title, excerpt, source reference (gold)
+  - Empty state: "No directly related sources found for this ayah."
+- **Verified live**: Opened Al-Fatihah → "Related" buttons on all ayahs → clicked ayah 1 → dialog showed "RELATED HADITH" and "RELATED DUAS" sections with cross-referenced content. VLM confirmed all elements present.
+
+### Verification results
+- **Lint**: `bun run lint` → 0 errors, 0 warnings (clean) throughout all changes.
+- **agent-browser QA**: All features tested working — Quran Juz toggle + Juz list + surahs-within-Juz, voice search button in Search view, Related button on every ayah + dialog with cross-source Hadith/Fatawa/Duas. No console errors.
+- **VLM assessment**: Related Sources dialog confirmed showing Related Hadith + Related Duas sections with titles, excerpts, and source references.
+- **Dev log**: Clean compiles, GET / 200 responses, no runtime errors.
+
+## Unresolved issues or risks, and priority recommendations for the next phase
+- **Voice search language**: Currently defaults to "en-US". Adding a language selector (Arabic ar-SA, Urdu ur-PK, English en-US) would make it more useful per Rev 5.0 §32.2.
+- **Related content accuracy**: The keyword-based matching is heuristic. For more precise relationships, the data model could include explicit `relatedAyahs` / `relatedHadith` fields on each content item.
+- **Tafseer coverage**: Still only 12 ayahs have tafseer. Expanding would improve the Tafseer feature.
+- **Advanced search filters**: Search has scope tabs but no author/language/category filters (Rev 5.0 §15.4).
+- **Recommended next priorities**: (1) Add voice search language selector. (2) Expand tafseer coverage. (3) Add advanced search filters. (4) Add "Search in this Book" to the Reader (§14). (5) Add Quran page navigation mode (§5.2).

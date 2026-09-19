@@ -5,8 +5,10 @@ import { motion } from "framer-motion";
 import {
   BookOpen,
   ChevronLeft,
+  ChevronRight,
   Hash,
   Heart,
+  Layers,
   MapPin,
   Search,
   Sparkles,
@@ -16,7 +18,11 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { quranData } from "@/lib/data/quran";
+import { juzData } from "@/lib/data/juz";
 import { getTafseer, hasTafseer } from "@/lib/data/tafseer";
+import { hadithCollections } from "@/lib/data/hadith";
+import { fatawaData } from "@/lib/data/fatawa";
+import { duaCategories } from "@/lib/data/duas";
 import type { Ayah, Surah } from "@/lib/types";
 import { StarMark, StarDivider } from "./star-mark";
 import { ShareButton } from "./share-button";
@@ -36,6 +42,100 @@ import { cn } from "@/lib/utils";
 const BASMALA_ARABIC = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ";
 const BASMALA_TRANSLATION =
   "In the name of Allah, the Entirely Merciful, the Especially Merciful.";
+
+// Common keywords for cross-source matching — maps ayah themes to related content.
+const THEME_KEYWORDS: { themes: string[]; terms: string[] }[] = [
+  { themes: ["mercy", "merciful", "forgiving", "forgiveness"], terms: ["mercy", "forgive", "forgiveness"] },
+  { themes: ["prayer", "worship", "prostrate", "bow"], terms: ["prayer", "salah", "worship"] },
+  { themes: ["charity", "zakat", "poor", "wealth", "give"], terms: ["charity", "zakat", "poor", "wealth"] },
+  { themes: ["patience", "persevere", "steadfast"], terms: ["patience", "persevere", "steadfast"] },
+  { themes: ["fast", "ramadan"], terms: ["fast", "fasting", "ramadan"] },
+  { themes: ["hajj", "pilgrimage", "pilgrims"], terms: ["hajj", "pilgrimage"] },
+  { themes: ["parents", "mother", "father", "family"], terms: ["parents", "mother", "father", "family"] },
+  { themes: ["knowledge", "learn", "teach", "book"], terms: ["knowledge", "learn", "teach"] },
+  { themes: ["heart", "soul", "faith", "believe"], terms: ["heart", "faith", "believe"] },
+  { themes: ["intention", "actions", "deeds"], terms: ["intention", "actions", "deeds"] },
+  { themes: ["peace", "salam", "greeting"], terms: ["peace", "greeting", "salam"] },
+  { themes: ["gratitude", "thankful", "thank"], terms: ["gratitude", "thank", "thankful"] },
+  { themes: ["morning", "evening", "dawn", "daybreak"], terms: ["morning", "evening", "dawn"] },
+  { themes: ["protection", "refuge", "evil", "shaytan", "satan"], terms: ["protection", "refuge", "evil"] },
+  { themes: ["travel", "journey"], terms: ["travel", "journey"] },
+  { themes: ["food", "eat", "lawful", "halal"], terms: ["food", "eat", "lawful", "halal"] },
+  { themes: ["sleep", "rest", "night"], terms: ["sleep", "rest", "night"] },
+];
+
+interface RelatedItem {
+  type: "hadith" | "fatwa" | "dua";
+  title: string;
+  excerpt: string;
+  reference: string;
+}
+
+function getRelatedContent(
+  _surahId: number,
+  _ayahNumber: number,
+  translation: string
+): { hadith: RelatedItem[]; fatawa: RelatedItem[]; duas: RelatedItem[] } {
+  const text = translation.toLowerCase();
+  const matchedTerms: string[] = [];
+  for (const group of THEME_KEYWORDS) {
+    if (group.themes.some((t) => text.includes(t))) {
+      matchedTerms.push(...group.terms);
+    }
+  }
+  if (matchedTerms.length === 0) {
+    return { hadith: [], fatawa: [], duas: [] };
+  }
+
+  const matches = (s: string) =>
+    matchedTerms.some((t) => s.toLowerCase().includes(t));
+
+  const hadith: RelatedItem[] = [];
+  for (const col of hadithCollections) {
+    for (const h of col.hadiths) {
+      if (matches(h.english) || matches(h.narrator)) {
+        hadith.push({
+          type: "hadith",
+          title: `${col.name} #${h.number}`,
+          excerpt: h.english.slice(0, 140) + (h.english.length > 140 ? "…" : ""),
+          reference: `${col.name} · ${h.narrator}`,
+        });
+      }
+    }
+  }
+
+  const fatawa: RelatedItem[] = [];
+  for (const f of fatawaData) {
+    if (matches(f.question) || matches(f.answer) || matches(f.topic)) {
+      fatawa.push({
+        type: "fatwa",
+        title: f.topic,
+        excerpt: f.answer.slice(0, 140) + (f.answer.length > 140 ? "…" : ""),
+        reference: `${f.scholar} · ${f.source}`,
+      });
+    }
+  }
+
+  const duas: RelatedItem[] = [];
+  for (const cat of duaCategories) {
+    for (const d of cat.duas) {
+      if (matches(d.translation) || matches(d.title) || matches(cat.name)) {
+        duas.push({
+          type: "dua",
+          title: d.title,
+          excerpt: d.translation.slice(0, 140) + (d.translation.length > 140 ? "…" : ""),
+          reference: `${cat.name} · ${d.reference}`,
+        });
+      }
+    }
+  }
+
+  return {
+    hadith: hadith.slice(0, 3),
+    fatawa: fatawa.slice(0, 3),
+    duas: duas.slice(0, 3),
+  };
+}
 
 export function QuranView() {
   const selectedSurahId = useAppStore((s) => s.selectedSurahId);
@@ -59,6 +159,10 @@ export function QuranView() {
 function SurahList() {
   const selectSurah = useAppStore((s) => s.selectSurah);
   const [query, setQuery] = useState("");
+  const [browseMode, setBrowseMode] = useState<"surah" | "juz">("surah");
+  const [selectedJuz, setSelectedJuz] = useState<number | null>(null);
+
+  const allSurahIds = useMemo(() => quranData.map((s) => s.id), []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -72,6 +176,13 @@ function SurahList() {
         String(s.id) === q
     );
   }, [query]);
+
+  const juzSurahs = useMemo(() => {
+    if (selectedJuz === null) return [];
+    const juz = juzData.find((j) => j.id === selectedJuz);
+    if (!juz) return [];
+    return quranData.filter((s) => juz.surahIds.includes(s.id));
+  }, [selectedJuz]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
@@ -108,71 +219,199 @@ function SurahList() {
         </div>
       </motion.header>
 
-      {/* Search */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.08 }}
-        className="relative mt-5"
-      >
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search surah by name or number…"
-          aria-label="Search surahs"
-          className="h-11 rounded-full border-border/60 bg-card pl-10 pr-4 text-sm shadow-sm focus-visible:ring-emerald/30"
-        />
-      </motion.div>
-
-      {/* Count */}
-      <p className="mt-4 text-sm text-muted-foreground">
-        Showing{" "}
-        <span className="font-semibold text-foreground">
-          {filtered.length}
-        </span>{" "}
-        {filtered.length === 1 ? "surah" : "surahs"}
-      </p>
-
-      {/* Surah grid */}
-      {filtered.length === 0 ? (
-        <Card className="mt-4 flex flex-col items-center justify-center gap-3 border-dashed border-border/60 bg-muted/20 p-10 text-center">
-          <Search className="h-10 w-10 text-muted-foreground/40" />
-          <div>
-            <p className="font-medium text-foreground">No surahs found</p>
-            <p className="text-sm text-muted-foreground">
-              Try a different name, number, or translation.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            className="mt-1 rounded-full border-emerald/30 text-emerald"
-            onClick={() => setQuery("")}
+      {/* Browse mode toggle: Surah / Juz */}
+      <div className="mt-5 flex justify-center">
+        <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-card p-1">
+          <button
+            onClick={() => {
+              setBrowseMode("surah");
+              setSelectedJuz(null);
+            }}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+              browseMode === "surah"
+                ? "bg-emerald-soft text-emerald"
+                : "text-muted-foreground hover:text-foreground"
+            )}
           >
-            Clear search
-          </Button>
-        </Card>
-      ) : (
+            <BookOpen className="mr-1.5 inline h-3.5 w-3.5" />
+            By Surah
+          </button>
+          <button
+            onClick={() => setBrowseMode("juz")}
+            className={cn(
+              "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+              browseMode === "juz"
+                ? "bg-emerald-soft text-emerald"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Layers className="mr-1.5 inline h-3.5 w-3.5" />
+            By Juz
+          </button>
+        </div>
+      </div>
+
+      {/* Search — only in surah mode */}
+      {browseMode === "surah" && (
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={{
-            hidden: { opacity: 0 },
-            visible: {
-              opacity: 1,
-              transition: { staggerChildren: 0.05 },
-            },
-          }}
-          className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.08 }}
+          className="relative mt-5"
         >
-          {filtered.map((surah) => (
-            <SurahCard
-              key={surah.id}
-              surah={surah}
-              onOpen={() => selectSurah(surah.id)}
-            />
-          ))}
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search surah by name or number…"
+            aria-label="Search surahs"
+            className="h-11 rounded-full border-border/60 bg-card pl-10 pr-4 text-sm shadow-sm focus-visible:ring-emerald/30"
+          />
         </motion.div>
+      )}
+
+      {/* Juz mode: show juz list or surahs within selected juz */}
+      {browseMode === "juz" && (
+        <div className="mt-5">
+          {selectedJuz === null ? (
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.05 },
+                },
+              }}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {juzData.map((juz) => {
+                const available = juz.surahIds.filter((id) =>
+                  allSurahIds.includes(id)
+                ).length;
+                return (
+                  <motion.button
+                    key={juz.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 16 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+                    }}
+                    onClick={() => setSelectedJuz(juz.id)}
+                    className="group flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-4 text-left transition-all hover:-translate-y-1 hover:border-emerald/30 hover:shadow-lg"
+                  >
+                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-emerald to-emerald/70 shadow-md">
+                      <StarMark className="absolute h-12 w-12 opacity-25" />
+                      <span className="relative z-10 text-lg font-bold text-primary-foreground">
+                        {juz.id}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-sm font-semibold text-foreground">
+                        {juz.name}
+                      </h3>
+                      <p className="font-arabic text-lg leading-tight text-emerald">
+                        {juz.nameArabic}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {available} surah{available === 1 ? "" : "s"} available
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition-transform group-hover:translate-x-0.5 group-hover:text-emerald" />
+                  </motion.button>
+                );
+              })}
+            </motion.div>
+          ) : (
+            <div>
+              <button
+                onClick={() => setSelectedJuz(null)}
+                className="mb-4 flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-emerald/30 hover:text-emerald"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                All Juz
+              </button>
+              <p className="mb-3 text-sm text-muted-foreground">
+                {juzSurahs.length} surah{juzSurahs.length === 1 ? "" : "s"} in{" "}
+                {juzData.find((j) => j.id === selectedJuz)?.name}
+              </p>
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: { staggerChildren: 0.05 },
+                  },
+                }}
+                className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                {juzSurahs.map((surah) => (
+                  <SurahCard
+                    key={surah.id}
+                    surah={surah}
+                    onOpen={() => selectSurah(surah.id)}
+                  />
+                ))}
+              </motion.div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Surah mode: count + grid */}
+      {browseMode === "surah" && (
+        <>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Showing{" "}
+            <span className="font-semibold text-foreground">
+              {filtered.length}
+            </span>{" "}
+            {filtered.length === 1 ? "surah" : "surahs"}
+          </p>
+
+          {filtered.length === 0 ? (
+            <Card className="mt-4 flex flex-col items-center justify-center gap-3 border-dashed border-border/60 bg-muted/20 p-10 text-center">
+              <Search className="h-10 w-10 text-muted-foreground/40" />
+              <div>
+                <p className="font-medium text-foreground">No surahs found</p>
+                <p className="text-sm text-muted-foreground">
+                  Try a different name, number, or translation.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="mt-1 rounded-full border-emerald/30 text-emerald"
+                onClick={() => setQuery("")}
+              >
+                Clear search
+              </Button>
+            </Card>
+          ) : (
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.05 },
+                },
+              }}
+              className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {filtered.map((surah) => (
+                <SurahCard
+                  key={surah.id}
+                  surah={surah}
+                  onOpen={() => selectSurah(surah.id)}
+                />
+              ))}
+            </motion.div>
+          )}
+        </>
       )}
     </div>
   );
@@ -457,8 +696,14 @@ function AyahRow({
   const audioSurahId = useAppStore((s) => s.audioSurahId);
   const isPlayingThis = audioSurahId === surahId;
   const [tafseerOpen, setTafseerOpen] = useState(false);
+  const [relatedOpen, setRelatedOpen] = useState(false);
   const tafseer = getTafseer(surahId, ayah.number);
   const hasTafseerAvailable = hasTafseer(surahId, ayah.number);
+
+  // Compute related content by keyword matching from the ayah translation.
+  const related = useMemo(() => {
+    return getRelatedContent(surahId, ayah.number, ayah.translation);
+  }, [surahId, ayah.number, ayah.translation]);
 
   return (
     <Card className="group card-refined relative rounded-2xl border-border/60 bg-card p-4 transition-all hover:border-emerald/30 sm:p-5">
@@ -538,7 +783,7 @@ function AyahRow({
             </span>
           </div>
 
-          {/* Action row: play + tafseer + transliteration */}
+          {/* Action row: play + tafseer + related + transliteration */}
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
@@ -564,6 +809,15 @@ function AyahRow({
                 Tafseer
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setRelatedOpen(true)}
+              className="flex items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-emerald/30 hover:bg-emerald-soft hover:text-emerald"
+              aria-label="View related sources"
+            >
+              <Sparkles className="h-3 w-3" />
+              Related
+            </button>
           </div>
 
           {/* Transliteration */}
@@ -640,6 +894,102 @@ function AyahRow({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Related sources Dialog */}
+      <Dialog open={relatedOpen} onOpenChange={setRelatedOpen}>
+        <DialogContent className="max-h-[85vh] max-w-2xl gap-0 overflow-y-auto border-emerald/20 p-0">
+          <div className="sticky top-0 z-10 border-b border-border/40 bg-gradient-to-br from-emerald to-emerald/80 p-5 text-primary-foreground">
+            <DialogHeader className="space-y-1">
+              <Badge className="w-fit bg-primary-foreground/15 text-primary-foreground">
+                <Sparkles className="mr-1 h-3 w-3" />
+                Related Sources
+              </Badge>
+              <DialogTitle className="text-lg font-bold">
+                Surah {surahName} · Ayah {ayah.number}
+              </DialogTitle>
+              <DialogDescription className="text-primary-foreground/80">
+                Cross-referenced content from Hadith, Fatawa, and Duas based on
+                this ayah's themes.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="space-y-5 p-5">
+            {related.hadith.length === 0 &&
+            related.fatawa.length === 0 &&
+            related.duas.length === 0 ? (
+              <div className="py-8 text-center">
+                <Sparkles className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No directly related sources found for this ayah.
+                </p>
+              </div>
+            ) : (
+              <>
+                {related.hadith.length > 0 && (
+                  <RelatedSection
+                    title="Related Hadith"
+                    icon={BookOpen}
+                    color="text-emerald"
+                    items={related.hadith}
+                  />
+                )}
+                {related.fatawa.length > 0 && (
+                  <RelatedSection
+                    title="Related Fatawa"
+                    icon={BookOpen}
+                    color="text-accent-foreground"
+                    items={related.fatawa}
+                  />
+                )}
+                {related.duas.length > 0 && (
+                  <RelatedSection
+                    title="Related Duas"
+                    icon={BookOpen}
+                    color="text-emerald"
+                    items={related.duas}
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
+  );
+}
+
+function RelatedSection({
+  title,
+  icon: Icon,
+  color,
+  items,
+}: {
+  title: string;
+  icon: typeof BookOpen;
+  color: string;
+  items: RelatedItem[];
+}) {
+  return (
+    <div>
+      <h4 className={cn("mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider", color)}>
+        <Icon className="h-3.5 w-3.5" />
+        {title}
+      </h4>
+      <div className="space-y-2">
+        {items.map((item, i) => (
+          <div
+            key={i}
+            className="rounded-lg border border-border/60 bg-card p-3"
+          >
+            <p className="text-sm font-semibold text-foreground">{item.title}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {item.excerpt}
+            </p>
+            <p className="mt-1.5 text-[11px] text-gold">{item.reference}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

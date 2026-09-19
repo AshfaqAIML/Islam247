@@ -22,6 +22,7 @@ import { libraryBooks } from "@/lib/data/books";
 import { duaCategories } from "@/lib/data/duas";
 import { fatawaData } from "@/lib/data/fatawa";
 import { StarMark, StarDivider } from "./star-mark";
+import { VoiceSearchButton } from "./voice-search-button";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -329,9 +330,18 @@ export function SearchView() {
           value={localQuery}
           onChange={(e) => setLocalQuery(e.target.value)}
           placeholder="Search for verses, hadith, books, or duas..."
-          className="h-14 rounded-full border-border/60 bg-card pl-12 pr-4 text-base shadow-sm focus-visible:ring-emerald"
+          className="h-14 rounded-full border-border/60 bg-card pl-12 pr-14 text-base shadow-sm focus-visible:ring-emerald"
           autoFocus
         />
+        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+          <VoiceSearchButton
+            onTranscript={(text) => {
+              setLocalQuery(text);
+              setSearchQuery(text);
+              addRecentSearch(text);
+            }}
+          />
+        </div>
       </form>
 
       {/* Scope tabs */}
