@@ -47,8 +47,9 @@ export function ReadingStatsWidget() {
   const dailyGoalAyahs = useAppStore((s) => s.dailyGoalAyahs);
   const setView = useAppStore((s) => s.setView);
 
-  // Compute date-dependent values only on the client to avoid hydration mismatches.
-  // Initial state uses deterministic defaults (empty 7-day chart, zero today's progress).
+  // Compute ALL persisted-store-dependent + date-dependent values only on the
+  // client to avoid hydration mismatches. The Zustand persisted store is empty
+  // during SSR but has saved data on the client after rehydration.
   const [last7, setLast7] = useState<
     { date: string; label: string; value: number; isToday: boolean }[]
   >(() =>
@@ -60,6 +61,8 @@ export function ReadingStatsWidget() {
     }))
   );
   const [todayProgress, setTodayProgress] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [totals, setTotals] = useState({ days: 0, chapters: 0, ayahs: 0, minutes: 0 });
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -69,11 +72,11 @@ export function ReadingStatsWidget() {
     setTodayProgress(
       ts ? ts.ayahsRead + ts.chaptersRead * 5 : 0
     );
-  }, [readingStats]);
+    setStreak(getStreak());
+    setTotals(getTotalStats());
+  }, [readingStats, getStreak, getTotalStats]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const streak = getStreak();
-  const totals = getTotalStats();
   const maxValue = Math.max(1, ...last7.map((d) => d.value));
   const activeDays = last7.filter((d) => d.value > 0).length;
 
@@ -169,7 +172,7 @@ export function ReadingStatsWidget() {
                   const heightPct = (d.value / maxValue) * 100;
                   return (
                     <div
-                      key={d.date}
+                      key={`${i}-${d.date}`}
                       className="flex flex-1 flex-col items-center gap-1"
                     >
                       <div className="flex h-16 w-full items-end justify-center">
